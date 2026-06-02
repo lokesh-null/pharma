@@ -27,7 +27,7 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           ui: ['lucide-react', 'framer-motion', 'clsx', 'tailwind-merge'],
-          utils: ['zustand', 'axios', 'html5-qrcode']
+          utils: ['zustand', 'html5-qrcode']
         }
       }
     }

@@ -38,7 +38,7 @@
     "eslint-plugin-react": "latest",
     "eslint-plugin-react-hooks": "latest",
     "eslint-plugin-react-refresh": "latest",
-    "jsdom": "^29.1.1",
+    "happy-dom": "^14.12.0",
     "postcss": "latest",
     "tailwindcss": "latest",
     "vite": "latest",

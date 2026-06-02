@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '../middleware/auth.middleware';
 import { authenticate, requireRole } from '../middleware/auth.middleware';
 import { getAuditService } from '../services/audit.service';
 

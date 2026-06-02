@@ -7,6 +7,8 @@ import { Card } from '@/components/ui/card';
 import { Activity, ArrowRight, Save } from 'lucide-react';
 import PageTransition from '@/components/ui/PageTransition';
 
+import { toast } from '@/lib/toast';
+
 const DiagnosisPage = () => {
     const { id } = useParams(); // Patient ID
     const navigate = useNavigate();
@@ -15,7 +17,7 @@ const DiagnosisPage = () => {
 
     const handleSaveAndProceed = () => {
         if (!diagnosis) {
-            alert("Please enter a diagnosis.");
+            toast.warning("Please enter a diagnosis.");
             return;
         }
         navigate(`/doctor/prescription/${id}`);

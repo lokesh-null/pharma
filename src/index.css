@@ -98,4 +98,9 @@
   h6 {
     @apply tracking-tight font-bold;
   }
+
+  /* Accessibility: Focus Visible styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-teal-500/50 ring-offset-2 ring-offset-white dark:ring-offset-slate-950 rounded-sm transition-all duration-200;
+  }
 }

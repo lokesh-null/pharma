@@ -33,7 +33,7 @@ export class ConsentService {
             data: {
                 patientId,
                 grantedTo,
-                scopes: scopes as any, // Store as JSON
+                scopes: JSON.stringify(scopes), // Store as JSON string
                 expiresAt
             }
         });
@@ -100,7 +100,7 @@ export class ConsentService {
             }
 
             // Check if required scopes are present
-            const scopes = consent.scopes as string[];
+            const scopes = JSON.parse(consent.scopes as string) as string[];
             const hasRequiredScopes = requiredScopes.every(scope =>
                 scopes.includes(scope)
             );
@@ -181,7 +181,7 @@ export class ConsentService {
 
         if (!consent) return false;
 
-        const scopes = consent.scopes as string[];
+        const scopes = JSON.parse(consent.scopes as string) as string[];
         return requiredScopes.every(scope => scopes.includes(scope));
     }
 }

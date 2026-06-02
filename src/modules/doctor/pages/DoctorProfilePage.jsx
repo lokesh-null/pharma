@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { LogOut, Bell, ShieldCheck, PenTool, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from '@/lib/toast';
 
 const DoctorProfilePage = () => {
     const navigate = useNavigate();
@@ -19,7 +20,7 @@ const DoctorProfilePage = () => {
         if (otp === '123456') {
             setSignatureStep('upload');
         } else {
-            alert('Invalid OTP');
+            toast.error('Invalid OTP');
         }
     };
 
@@ -29,7 +30,7 @@ const DoctorProfilePage = () => {
             setShowOtpModal(false);
             setSignatureStep('verify');
             setOtp('');
-            alert("Digital Signature Updated Successfully!");
+            toast.success("Digital Signature Updated Successfully!");
         }, 1500);
     };
 

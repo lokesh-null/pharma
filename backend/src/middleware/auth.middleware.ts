@@ -1,6 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import { getAuthService } from '../services/auth.service';
-import { UserRole } from '@prisma/client';
+
+// User role constants (SQLite doesn't support enums)
+export const UserRole = {
+    ADMIN: 'ADMIN',
+    NURSE: 'NURSE',
+    STAFF: 'STAFF',
+    PHARMACY: 'PHARMACY',
+} as const;
+
+export type UserRoleType = typeof UserRole[keyof typeof UserRole];
 
 // Extend Express Request type to include user
 declare global {
@@ -9,7 +18,7 @@ declare global {
             user?: {
                 userId: string;
                 email: string;
-                role: UserRole;
+                role: string;
             };
         }
     }
@@ -44,7 +53,7 @@ export async function authenticate(
         req.user = {
             userId: decoded.userId,
             email: decoded.email,
-            role: decoded.role as UserRole
+            role: decoded.role
         };
 
         next();
@@ -63,7 +72,7 @@ export async function authenticate(
  * Authorization Middleware (RBAC)
  * Requires specific roles to access the route
  */
-export function requireRole(...allowedRoles: UserRole[]) {
+export function requireRole(...allowedRoles: string[]) {
     return (req: Request, res: Response, next: NextFunction): void => {
         if (!req.user) {
             res.status(401).json({ error: 'Not authenticated' });
@@ -100,7 +109,7 @@ export function optionalAuth(
             req.user = {
                 userId: decoded.userId,
                 email: decoded.email,
-                role: decoded.role as UserRole
+                role: decoded.role
             };
         }
 

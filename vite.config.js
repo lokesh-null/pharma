@@ -15,4 +15,21 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.js',
+    globals: true,
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['lucide-react', 'framer-motion', 'clsx', 'tailwind-merge'],
+          utils: ['zustand', 'axios', 'html5-qrcode']
+        }
+      }
+    }
+  }
 })

@@ -1,11 +1,14 @@
-
 import React from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { QrCode, ClipboardList, Package, User } from 'lucide-react';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { QrCode, ClipboardList, Package, User, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import Logo from '@/components/ui/Logo';
+import { useAuthStore } from '@/lib/authStore';
 
 const PharmacistLayout = () => {
     const location = useLocation();
+    const navigate = useNavigate();
+    const { user, logout } = useAuthStore();
 
     const tabs = [
         { path: '/pharmacist/scan', icon: QrCode, label: 'Scan' },
@@ -14,30 +17,42 @@ const PharmacistLayout = () => {
         { path: '/pharmacist/profile', icon: User, label: 'Profile' },
     ];
 
-    // Check if we are in the Dispense flow (which behaves like a sub-page of Scan)
-    // If so, we might want to keep the 'Scan' tab active or hide the nav if strictly requested.
-    // However, user said "Navbar must NEVER disappear".
-    // "Scan" tab should probably be active even when in /dispense.
     const getActiveTab = (path) => {
         if (location.pathname.includes('/pharmacist/dispense')) return '/pharmacist/scan';
         return path;
+    };
+
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login');
     };
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
             {/* Top Bar - Minimal */}
             <header className="bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-                <Logo size="sm" />
-                <span className="text-xs font-medium text-slate-400">POS v2.0</span>
+                <div className="flex items-center gap-3">
+                    <Logo size="sm" />
+                </div>
+                
+                <div className="flex items-center gap-4">
+                    <div className="text-right hidden sm:block">
+                        <p className="text-sm font-semibold text-slate-900">{user?.name || 'MedPlus Pharmacy'}</p>
+                        <p className="text-xs text-slate-500 capitalize">{user?.role?.toLowerCase() || 'Pharmacy'}</p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-600" onClick={handleLogout} title="Logout">
+                        <LogOut size={20} />
+                    </Button>
+                </div>
             </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto pb-20">
                 <Outlet />
             </main>
 
             {/* Bottom Navigation */}
-            <nav className="bg-white border-t border-slate-200 fixed bottom-0 w-full z-50 pb-safe">
+            <nav className="bg-white border-t border-slate-200 fixed bottom-0 w-full z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                 <div className="flex justify-around items-center h-16">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;

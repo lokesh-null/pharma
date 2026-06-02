@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Logo from '@/components/ui/Logo';
 
+import { toast } from '@/lib/toast';
+
 const DoctorRegistration = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +19,7 @@ const DoctorRegistration = () => {
 
     const handleRegister = () => {
         if (!formData.licenseNumber || !formData.hospitalName) {
-            alert("Please fill all required fields");
+            toast.error("Please fill all required fields");
             return;
         }
 

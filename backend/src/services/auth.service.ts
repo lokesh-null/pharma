@@ -89,7 +89,12 @@ export class AuthService {
      * Payload: { userId, email, role }
      */
     generateAccessToken(payload: { userId: string; email: string; role: string }): string {
-        return (jwt.sign as any)(payload, this.JWT_ACCESS_SECRET, { expiresIn: this.JWT_ACCESS_EXPIRY });
+        return (jwt.sign as any)(payload, this.JWT_ACCESS_SECRET, {
+            expiresIn: this.JWT_ACCESS_EXPIRY,
+            issuer: 'pharmalync',
+            audience: 'pharmalync-api',
+            algorithm: 'HS256'
+        });
     }
 
     /**
@@ -97,7 +102,12 @@ export class AuthService {
      * Payload: { userId }
      */
     generateRefreshToken(payload: { userId: string }): string {
-        return (jwt.sign as any)(payload, this.JWT_REFRESH_SECRET, { expiresIn: this.JWT_REFRESH_EXPIRY });
+        return (jwt.sign as any)(payload, this.JWT_REFRESH_SECRET, {
+            expiresIn: this.JWT_REFRESH_EXPIRY,
+            issuer: 'pharmalync',
+            audience: 'pharmalync-api',
+            algorithm: 'HS256'
+        });
     }
 
     /**

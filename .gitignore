@@ -115,3 +115,19 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# SQLite
+*.db
+*.db-journal
+
+# Hardhat
+smart-contracts/artifacts/
+smart-contracts/cache/
+smart-contracts/typechain-types/

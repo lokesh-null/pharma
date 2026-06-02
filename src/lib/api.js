@@ -1,8 +1,12 @@
-const API_BASE_URL = 'http://localhost:3000/api';
-
 /**
  * PharmaLync API Client
- * Centralized fetch wrapper for backend communication
+ * Full-featured client with JWT interceptors, auto-refresh, and error normalization
+ */
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+/**
+ * Core fetch wrapper with auth and error handling
  */
 const apiClient = async (endpoint, options = {}) => {
     const token = localStorage.getItem('access_token');
@@ -16,22 +20,77 @@ const apiClient = async (endpoint, options = {}) => {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers,
-    });
+    let response;
+    try {
+        response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers,
+        });
+    } catch (networkError) {
+        throw new Error('Network error — please check your connection');
+    }
 
-    const data = await response.json();
+    // Handle 401 — attempt token refresh
+    if (response.status === 401 && !options._isRetry) {
+        const refreshed = await attemptTokenRefresh();
+        if (refreshed) {
+            // Retry with new token
+            return apiClient(endpoint, { ...options, _isRetry: true });
+        }
+        // Refresh failed — clear auth and redirect
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('auth-storage');
+        window.location.href = '/login';
+        throw new Error('Session expired. Please login again.');
+    }
+
+    let data;
+    try {
+        data = await response.json();
+    } catch {
+        data = { error: `Server returned ${response.status}` };
+    }
 
     if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong');
+        const error = new Error(data.error || data.message || `Request failed (${response.status})`);
+        error.status = response.status;
+        error.data = data;
+        throw error;
     }
 
     return data;
 };
 
+/**
+ * Attempt to refresh the access token
+ */
+async function attemptTokenRefresh() {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) return false;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!response.ok) return false;
+
+        const data = await response.json();
+        localStorage.setItem('access_token', data.accessToken);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * API namespace with all endpoints
+ */
 export const api = {
-    // Auth
+    // === Auth ===
     auth: {
         login: (email, password) => apiClient('/auth/login', {
             method: 'POST',
@@ -41,26 +100,32 @@ export const api = {
             method: 'POST',
             body: JSON.stringify(userData),
         }),
+        refresh: (refreshToken) => apiClient('/auth/refresh', {
+            method: 'POST',
+            body: JSON.stringify({ refreshToken }),
+        }),
+        logout: () => apiClient('/auth/logout', { method: 'POST' }),
     },
 
-    // Patients
+    // === Patients ===
     patients: {
-        getProfile: (id) => apiClient(`/patients/${id}`),
+        list: () => apiClient('/patients'),
+        getById: (id) => apiClient(`/patients/${id}`),
+        create: (data) => apiClient('/patients', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+        update: (id, data) => apiClient(`/patients/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
+        delete: (id) => apiClient(`/patients/${id}`, { method: 'DELETE' }),
         getAadhaar: (id, consentToken) => apiClient(`/patients/${id}/aadhaar`, {
             headers: { 'X-Consent-Token': consentToken }
         }),
     },
 
-    // Medicines & QR
-    medicines: {
-        verifyQr: (qrToken) => apiClient('/medicines/verify-qr', {
-            method: 'POST',
-            body: JSON.stringify({ qrToken }),
-        }),
-        getQr: (id) => apiClient(`/medicines/${id}/qr`),
-    },
-
-    // Prescriptions
+    // === Prescriptions ===
     prescriptions: {
         create: (data) => apiClient('/prescriptions', {
             method: 'POST',
@@ -71,4 +136,52 @@ export const api = {
             body: JSON.stringify({ qrToken }),
         }),
     },
+
+    // === Medicines ===
+    medicines: {
+        list: () => apiClient('/medicines'),
+        getById: (id) => apiClient(`/medicines/${id}`),
+        register: (data) => apiClient('/medicines', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+        dispense: (id) => apiClient(`/medicines/${id}/dispense`, {
+            method: 'POST',
+        }),
+        getQr: (id) => apiClient(`/medicines/${id}/qr`),
+        verifyQr: (qrToken) => apiClient('/medicines/verify-qr', {
+            method: 'POST',
+            body: JSON.stringify({ qrToken }),
+        }),
+    },
+
+    // === Consent ===
+    consent: {
+        grant: (data) => apiClient('/consent/grant', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+        revoke: (consentId) => apiClient('/consent/revoke', {
+            method: 'POST',
+            body: JSON.stringify({ consentId }),
+        }),
+        getForPatient: (patientId) => apiClient(`/consent/${patientId}`),
+    },
+
+    // === Audit ===
+    audit: {
+        getLogs: (filters = {}) => {
+            const params = new URLSearchParams();
+            Object.entries(filters).forEach(([key, val]) => {
+                if (val) params.set(key, val);
+            });
+            const query = params.toString();
+            return apiClient(`/audit/logs${query ? `?${query}` : ''}`);
+        },
+        getById: (id) => apiClient(`/audit/logs/${id}`),
+        verify: (id) => apiClient(`/audit/verify/${id}`),
+    },
+
+    // === Health ===
+    health: () => fetch(`${API_BASE_URL.replace('/api', '')}/health`).then(r => r.json()),
 };

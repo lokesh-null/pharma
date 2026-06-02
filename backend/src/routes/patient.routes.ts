@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { UserRole } from '../middleware/auth.middleware';
 import { ConsentScope } from '../services/consent.service';
 import { authenticate, requireRole } from '../middleware/auth.middleware';
 import { requirePatientConsent } from '../middleware/consent.middleware';

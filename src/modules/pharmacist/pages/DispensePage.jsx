@@ -4,6 +4,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { usePharmacyStore } from '../store';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { toast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -100,7 +101,7 @@ const DispensePage = () => {
             } catch (err) {
                 console.error("Error starting scanner", err);
                 setIsScanning(false);
-                alert("Camera error: " + err);
+                toast.error("Camera error: " + err);
             }
         }, 100);
     };
@@ -159,7 +160,7 @@ const DispensePage = () => {
 
                 // VALIDATION: Stock
                 if (existingItem.quantity + qty > med.stock) {
-                    alert(`Not enough stock! Max: ${med.stock}`);
+                    toast.warning(`Not enough stock! Max: ${med.stock}`);
                     return prev;
                 }
 
@@ -168,7 +169,7 @@ const DispensePage = () => {
                     const totalRequested = existingItem.quantity + qty;
                     const remainingAllowed = medRx.maxQty - medRx.dispensed;
                     if (totalRequested > remainingAllowed) {
-                        alert(`Cannot exceed prescribed quantity. Limit: ${remainingAllowed} more.`);
+                        toast.warning(`Cannot exceed prescribed quantity. Limit: ${remainingAllowed} more.`);
                         return prev;
                     }
                 }
@@ -179,7 +180,7 @@ const DispensePage = () => {
                 // New Item
                 // VALIDATION: Stock
                 if (qty > med.stock) {
-                    alert(`Not enough stock! Max: ${med.stock}`);
+                    toast.warning(`Not enough stock! Max: ${med.stock}`);
                     return prev;
                 }
 
@@ -202,7 +203,7 @@ const DispensePage = () => {
 
                 // 1. Stock Constraint
                 if (newQty > med.stock) {
-                    alert(`Max stock available is ${med.stock}`);
+                    toast.warning(`Max stock available is ${med.stock}`);
                     return item; // No change
                 }
 
@@ -239,7 +240,7 @@ const DispensePage = () => {
                 setIsScanning(false);
             }, 1500);
         } catch (error) {
-            alert("Checkout Failed: " + error.message);
+            toast.error("Checkout Failed: " + error.message);
             setIsScanning(false);
         }
     };

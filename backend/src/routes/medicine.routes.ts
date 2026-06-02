@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { UserRole } from '../middleware/auth.middleware';
 import { authenticate, requireRole } from '../middleware/auth.middleware';
 import { auditLog } from '../middleware/audit.middleware';
 import { validateRequest } from '../middleware/security.middleware';

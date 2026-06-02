@@ -6,6 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/ui/Logo';
+import { toast } from '@/lib/toast';
 
 const roles = [
     { id: 'patient', label: 'Patient', icon: User, color: 'text-teal-600', bg: 'bg-teal-50' },
@@ -33,15 +34,15 @@ const SignupPage = () => {
     const handleRegister = () => {
         // Validation
         if (!formData.name || !formData.mobile) {
-            alert('Please fill in all required fields.');
+            toast.error('Please fill in all required fields.');
             return;
         }
         if ((selectedRole === 'patient' || selectedRole === 'doctor') && !formData.govId) {
-            alert('Government ID is required.');
+            toast.error('Government ID is required.');
             return;
         }
         if (selectedRole === 'pharmacist' && !formData.licenseId) {
-            alert('License ID is required.');
+            toast.error('License ID is required.');
             return;
         }
 
@@ -62,7 +63,7 @@ const SignupPage = () => {
                 else if (selectedRole === 'doctor') navigate('/doctor/dashboard');
                 else if (selectedRole === 'pharmacist') navigate('/pharmacist/scan');
             } else {
-                alert('Invalid OTP. Use 123456');
+                toast.error('Invalid OTP. Use 123456');
             }
         }, 1000);
     };

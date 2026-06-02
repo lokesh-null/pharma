@@ -5,51 +5,68 @@ import { User, Stethoscope, Store, ShieldCheck, ArrowRight } from 'lucide-react'
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/authStore';
+import { toast } from '@/lib/toast';
 import Logo from '@/components/ui/Logo';
 
 const roles = [
     { id: 'patient', label: 'Patient', icon: User, color: 'text-teal-600', bg: 'bg-teal-50', backendRole: 'PATIENT' },
-    { id: 'doctor', label: 'Doctor', icon: Stethoscope, color: 'text-blue-600', bg: 'bg-blue-50', backendRole: 'ADMIN' }, // MVP: Admin acts as Doctor
+    { id: 'doctor', label: 'Doctor', icon: Stethoscope, color: 'text-blue-600', bg: 'bg-blue-50', backendRole: 'ADMIN' },
     { id: 'pharmacist', label: 'Pharmacist', icon: Store, color: 'text-orange-600', bg: 'bg-orange-50', backendRole: 'PHARMACY' },
 ];
 
 const LoginPage = () => {
     const [selectedRole, setSelectedRole] = useState('patient');
-    const [step, setStep] = useState('role'); // 'role' | 'otp'
+    const [step, setStep] = useState('role'); // 'role' | 'otp' (only for patient)
     const [identifier, setIdentifier] = useState('');
-    const [otp, setOtp] = useState('');
+    const [password, setPassword] = useState(''); // Used for Doctor/Pharmacist
+    const [otp, setOtp] = useState(''); // Used for Patient
     const [isLoading, setIsLoading] = useState(false);
+    
     const navigate = useNavigate();
-    const setAuth = useAuthStore(state => state.setAuth);
+    const login = useAuthStore(state => state.login);
 
-    const handleLogin = () => {
+    const handlePatientLogin = () => {
         if (!identifier) {
-            if (selectedRole === 'patient') alert("Please enter Mobile Number or Aadhaar");
-            else alert("Please enter License ID or Mobile Number");
+            toast.warning("Please enter Mobile Number or Aadhaar");
             return;
         }
-        // Simulate OTP sent for all roles
+        // Simulate OTP sent for Patient
+        toast.info("OTP sent to registered mobile number");
         setStep('otp');
     };
 
-    const verifyOtp = () => {
-        if (otp === '123456') { // Mock OTP
-            if (selectedRole === 'patient') {
-                navigate('/patient/dashboard');
-            } else if (selectedRole === 'doctor') {
-                // Mock logic for doctor registration check
-                if (identifier === '9999999999') {
-                    navigate('/doctor/register');
-                } else {
-                    navigate('/doctor/dashboard');
-                }
+    const handleStaffLogin = async (e) => {
+        e.preventDefault();
+        if (!identifier || !password) {
+            toast.warning("Please enter both email and password");
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await login(identifier, password);
+            toast.success("Login successful!");
+            
+            // Route based on role
+            if (selectedRole === 'doctor') {
+                navigate('/doctor/dashboard');
             } else if (selectedRole === 'pharmacist') {
                 navigate('/pharmacist/scan');
             }
+        } catch (error) {
+            toast.error(error.message || "Invalid credentials");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const verifyPatientOtp = () => {
+        if (otp === '123456') { // Mock OTP for Patient
+            toast.success("Identity verified successfully");
+            navigate('/patient/dashboard');
         } else {
-            alert('Invalid OTP. Use 123456');
+            toast.error('Invalid OTP. Use 123456 for demo');
         }
     };
 
@@ -77,7 +94,7 @@ const LoginPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
 
-                    {/* Role Selector - Only show if not in OTP mode */}
+                    {/* Role Selector */}
                     {step === 'role' && (
                         <div className="grid grid-cols-3 gap-3">
                             {roles.map((role) => (
@@ -108,24 +125,51 @@ const LoginPage = () => {
 
                     {/* Inputs */}
                     <div className="space-y-4">
-                        {step === 'role' ? (
+                        {step === 'role' && selectedRole === 'patient' && (
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-slate-500 uppercase ml-1">
-                                    {selectedRole === 'patient' ? 'Mobile / Aadhaar' : selectedRole === 'doctor' ? 'Mobile / License ID' : 'License ID'}
+                                    Mobile / Aadhaar
                                 </label>
                                 <input
                                     type="text"
                                     value={identifier}
                                     onChange={(e) => setIdentifier(e.target.value)}
                                     className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all font-medium text-slate-900"
-                                    placeholder={
-                                        selectedRole === 'patient' ? 'Enter Mobile / Aadhaar'
-                                            : selectedRole === 'doctor' ? 'Enter Mobile / License ID'
-                                                : 'LIC-8821-X'
-                                    }
+                                    placeholder="Enter Mobile or Aadhaar"
                                 />
                             </div>
-                        ) : (
+                        )}
+
+                        {step === 'role' && selectedRole !== 'patient' && (
+                            <form id="staff-login" onSubmit={handleStaffLogin} className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-slate-500 uppercase ml-1">
+                                        Email Address
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={identifier}
+                                        onChange={(e) => setIdentifier(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all font-medium text-slate-900"
+                                        placeholder={selectedRole === 'doctor' ? 'dr.sharma@pharmalync.in' : 'pharmacy@pharmalync.in'}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-slate-500 uppercase ml-1">
+                                        Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all font-medium text-slate-900"
+                                        placeholder="••••••••"
+                                    />
+                                </div>
+                            </form>
+                        )}
+
+                        {step === 'otp' && (
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-slate-500 uppercase ml-1">
                                     One Time Password
@@ -151,15 +195,17 @@ const LoginPage = () => {
                 <CardFooter>
                     {step === 'role' ? (
                         <Button
-                            onClick={handleLogin}
+                            onClick={selectedRole === 'patient' ? handlePatientLogin : handleStaffLogin}
                             disabled={isLoading}
+                            form={selectedRole !== 'patient' ? 'staff-login' : undefined}
+                            type={selectedRole !== 'patient' ? 'submit' : 'button'}
                             className="w-full h-12 text-base font-semibold shadow-xl shadow-teal-900/20 hover:scale-[1.02] transition-transform"
                         >
                             {isLoading ? 'Processing...' : (selectedRole === 'patient' ? 'Get OTP' : 'Sign In')} <ArrowRight className="ml-2" size={18} />
                         </Button>
                     ) : (
                         <Button
-                            onClick={verifyOtp}
+                            onClick={verifyPatientOtp}
                             disabled={isLoading}
                             className="w-full h-12 text-base font-semibold shadow-xl shadow-teal-900/20 hover:scale-[1.02] transition-transform bg-teal-700 hover:bg-teal-800"
                         >

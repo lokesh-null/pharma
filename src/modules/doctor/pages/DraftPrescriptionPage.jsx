@@ -13,6 +13,8 @@ const medicinesMock = [
     { id: 5, name: "Montelukast", type: "Tablet" }
 ];
 
+import { toast } from '@/lib/toast';
+
 const DraftPrescriptionPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -48,10 +50,10 @@ const DraftPrescriptionPage = () => {
 
     const handleIssue = () => {
         if (selectedMeds.length === 0) {
-            alert("Please add at least one medicine.");
+            toast.warning("Please add at least one medicine.");
             return;
         }
-        alert("Prescription Digitally Signed & Issued!");
+        toast.success("Prescription Digitally Signed & Issued!");
         navigate('/doctor/activity');
     };
 

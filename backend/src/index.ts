@@ -2,6 +2,7 @@ import express, { Application } from 'express';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import { KeyManagementService } from './services/kms.service';
+import { logger } from './utils/logger';
 
 // Load environment variables
 dotenv.config();
@@ -36,9 +37,9 @@ const PORT = process.env.PORT || 3000;
 function validateEnvironment(): void {
     try {
         KeyManagementService.validateConfig();
-        console.log('✓ Environment configuration validated');
+        logger.info('✓ Environment configuration validated');
     } catch (error: any) {
-        console.error('✗ Environment validation failed:', error.message);
+        logger.error('✗ Environment validation failed:', { error: error.message });
         process.exit(1);
     }
 }
@@ -104,9 +105,9 @@ function initializeRoutes(): void {
 async function connectDatabase(): Promise<void> {
     try {
         await prisma.$connect();
-        console.log('✓ Database connected');
+        logger.info('✓ Database connected');
     } catch (error) {
-        console.error('✗ Database connection failed:', error);
+        logger.error('✗ Database connection failed:', { error });
         process.exit(1);
     }
 }
@@ -146,16 +147,12 @@ async function startServer(): Promise<void> {
 
         // Start listening
         app.listen(PORT, () => {
-            console.log('\n╔════════════════════════════════════════════╗');
-            console.log('║     PharmaLync Backend Server Started     ║');
-            console.log('╚════════════════════════════════════════════╝');
-            console.log(`\n🚀 Server running on port ${PORT}`);
-            console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`🔒 Security: Enabled (Helmet, CORS, Rate Limiting)`);
-            console.log(`🔐 Encryption: AES-256-GCM with PBKDF2-SHA512`);
-            console.log(`⛓️  Blockchain: ${process.env.BLOCKCHAIN_NETWORK || 'Not configured'}`);
-            console.log(`\n📚 API Documentation: http://localhost:${PORT}/health`);
-            console.log('\n✓ Ready to accept requests\n');
+            logger.info('PharmaLync Backend Server Started', {
+                port: PORT,
+                environment: process.env.NODE_ENV || 'development',
+                blockchain: process.env.BLOCKCHAIN_NETWORK || 'Not configured'
+            });
+            logger.info(`📚 API Documentation: http://localhost:${PORT}/health`);
         });
 
         // Handle shutdown signals
@@ -163,7 +160,7 @@ async function startServer(): Promise<void> {
         process.on('SIGINT', gracefulShutdown);
 
     } catch (error) {
-        console.error('✗ Failed to start server:', error);
+        logger.error('✗ Failed to start server:', { error });
         process.exit(1);
     }
 }

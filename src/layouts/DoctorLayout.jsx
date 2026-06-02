@@ -1,19 +1,24 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
-import { Stethoscope, Bell, Settings, LogOut } from 'lucide-react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Stethoscope, Bell, QrCode, ClipboardList, UserCircle, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-
+import { cn } from '@/lib/utils';
 import Logo from '@/components/ui/Logo';
+import { useAuthStore } from '@/lib/authStore';
 
 const DoctorHeader = () => {
+    const { user, logout } = useAuthStore();
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login');
+    };
+
     return (
-        <header className="sticky top-0 z-50 w-full glass-header px-6 py-3 flex items-center justify-between">
+        <header className="sticky top-0 z-50 w-full glass-header px-6 py-3 flex items-center justify-between bg-white/80 backdrop-blur-md border-b border-slate-100">
             <div className="flex items-center gap-3">
                 <Logo size="sm" />
-                <div className="hidden sm:block">
-                    {/* <span className="text-xs text-slate-500 font-medium ml-2">Doctor Portal</span> */}
-                </div>
             </div>
 
             <div className="flex items-center gap-4">
@@ -26,34 +31,36 @@ const DoctorHeader = () => {
 
                 <div className="flex items-center gap-3">
                     <div className="text-right hidden sm:block">
-                        <p className="text-sm font-semibold text-slate-900">Dr. Sharma</p>
-                        <p className="text-xs text-slate-500">General Physician</p>
+                        <p className="text-sm font-semibold text-slate-900">{user?.name || 'Dr. Sharma'}</p>
+                        <p className="text-xs text-slate-500 capitalize">{user?.role?.toLowerCase() || 'General Physician'}</p>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white shadow-sm">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Doctor" alt="Doc" />
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Doctor'}`} alt="Doc" />
                     </div>
                 </div>
+
+                <div className="h-8 w-px bg-slate-200 hidden sm:block" />
+
+                <Button variant="ghost" size="icon" className="hidden sm:flex text-slate-400 hover:text-red-600" onClick={handleLogout} title="Logout">
+                    <LogOut size={20} />
+                </Button>
             </div>
         </header>
     );
 };
-
-import { Link, useLocation } from 'react-router-dom';
-import { QrCode, ClipboardList, UserCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 const DoctorLayout = () => {
     const location = useLocation();
     const currentPath = location.pathname;
 
     const navItems = [
-        { icon: QrCode, label: 'Scan QR', path: '/doctor/scan' }, // Dashboard landing
+        { icon: QrCode, label: 'Scan QR', path: '/doctor/scan' },
         { icon: ClipboardList, label: 'Activity Log', path: '/doctor/activity' },
         { icon: UserCircle, label: 'Profile', path: '/doctor/profile' },
     ];
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-20"> {/* pb-20 for bottom nav */}
+        <div className="min-h-screen bg-slate-50 pb-20">
             <DoctorHeader />
             <main className="max-w-md mx-auto min-h-[calc(100vh-140px)]">
                 <Outlet />
@@ -62,7 +69,6 @@ const DoctorLayout = () => {
             {/* Bottom Navigation */}
             <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 px-6 py-2 pb-6 z-50 flex justify-around items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                 {navItems.map((item) => {
-                    // Simple active check
                     const isActive = currentPath === item.path || (item.path === '/doctor/scan' && currentPath === '/doctor/dashboard');
 
                     return (

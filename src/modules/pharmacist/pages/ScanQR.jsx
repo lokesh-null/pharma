@@ -68,10 +68,29 @@ const ScanQR = () => {
         try {
             const data = JSON.parse(token);
             if (data.type === 'patient' && data.id) {
-                // Direct Patient QR
-                setPatient(data.id);
-                navigate('/pharmacist/dispense');
-                return;
+                try {
+                    // Fetch patient details
+                    const userRes = await api.users.search(data.id);
+                    
+                    // Fetch patient prescriptions
+                    const presRes = await api.prescriptions.list(data.id);
+                    
+                    const patientData = {
+                        id: userRes.patient.id,
+                        name: userRes.patient.fullName,
+                        age: 25, // Fallback age or parse from dob if available
+                        prescriptions: presRes.prescriptions || []
+                    };
+
+                    setPatient(patientData);
+                    navigate('/pharmacist/dispense');
+                    return;
+                } catch (apiError) {
+                    setErrorMsg("Failed to load patient data: " + (apiError.message || 'Unknown error'));
+                    setScannerActive(false);
+                    setIsLoading(false);
+                    return;
+                }
             }
         } catch (e) {
             // Not a JSON object, proceed to API verification
@@ -80,12 +99,21 @@ const ScanQR = () => {
         try {
             const result = await api.prescriptions.verifyQr(token);
 
+            // Normalize the prescription format to match the frontend expectations
+            const normalizedPrescription = {
+                id: result.prescription.id,
+                status: 'issued', // or derived from dispensed status
+                doctor: result.prescription.doctor?.name || 'Unknown Doctor',
+                date: new Date(result.prescription.issuedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+                medicines: result.prescription.medicines
+            };
+
             // Map backend patient to store
             const patientData = {
                 id: result.prescription.patientId,
-                name: result.prescription.patient.name,
+                name: result.prescription.patient?.name || 'Unknown Patient',
                 age: 25,
-                prescriptions: [result.prescription]
+                prescriptions: [normalizedPrescription]
             };
 
             setPatient(patientData);

@@ -7,54 +7,39 @@ import { motion, AnimatePresence } from 'framer-motion';
 import MotionCard from '@/components/ui/MotionCard';
 import PageTransition from '@/components/ui/PageTransition';
 
-// Mock Data
-const prescriptions = [
-    {
-        id: 'rx-001',
-        name: 'Viral Fever Treatment',
-        doctor: 'Dr. Sarah Smith',
-        hospital: 'City Care Hospital',
-        pharmacy: 'Green Cross Pharmacy',
-        date: '24 Jan 2024',
-        medicines: [
-            { id: 1, name: 'Dolo 650', dosage: '650mg', type: 'Tablet', count: '10' },
-            { id: 2, name: 'Amoxicillin', dosage: '500mg', type: 'Capsule', count: '6' }
-        ]
-    },
-    {
-        id: 'rx-002',
-        name: 'Allergy Relief',
-        doctor: 'Dr. John Doe',
-        hospital: 'Health Plus Clinic',
-        pharmacy: 'Apollo Pharmacy',
-        date: '02 Jan 2024',
-        medicines: [
-            { id: 3, name: 'Cetirizine', dosage: '10mg', type: 'Tablet', count: '10' },
-            { id: 4, name: 'Montelukast', dosage: '10mg', type: 'Tablet', count: '10' }
-        ]
-    }
-];
-
-const otcMedicines = [
-    { id: 5, name: 'Vicks VapoRub', dosage: '50g', type: 'Balm', count: '1', date: '15 Jan 2024' },
-    { id: 6, name: 'Band-Aid', dosage: 'Standard', type: 'Strips', count: '10', date: '10 Jan 2024' }
-];
+import { useEffect } from 'react';
+import { api } from '@/lib/api';
+import { toast } from '@/lib/toast';
 
 const MedicineLog = () => {
+    const [prescriptions, setPrescriptions] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [selectedRx, setSelectedRx] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const filters = ['Date', 'Time', 'Doctor', 'Prescription'];
 
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const res = await api.prescriptions.getMyPrescriptions();
+                setPrescriptions(res.prescriptions || []);
+            } catch (err) {
+                toast.error('Failed to load prescriptions');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
     // Filter Logic
     const filteredPrescriptions = prescriptions.filter(rx =>
-        rx.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (rx.name || 'Prescription').toLowerCase().includes(searchQuery.toLowerCase()) ||
         rx.doctor.toLowerCase().includes(searchQuery.toLowerCase()) ||
         rx.medicines.some(med => med.name.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
-    const filteredOtc = otcMedicines.filter(med =>
-        med.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredOtc = [];
 
     const hasResults = filteredPrescriptions.length > 0 || filteredOtc.length > 0;
 
@@ -115,7 +100,9 @@ const MedicineLog = () => {
             {/* Content Area */}
             <div className="space-y-8">
 
-                {!hasResults && searchQuery ? (
+                {isLoading ? (
+                    <div className="text-center py-12 text-slate-500">Loading your medicines...</div>
+                ) : !hasResults && searchQuery ? (
                     <div className="text-center py-12">
                         <p className="text-slate-500 dark:text-slate-400">No medicines found matching "{searchQuery}"</p>
                         <Button
@@ -151,7 +138,7 @@ const MedicineLog = () => {
                                                 <div className="p-4 flex justify-between items-start bg-gradient-to-r from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 rounded-2xl mb-1">
                                                     <div>
                                                         <h4 className="font-bold text-slate-900 dark:text-slate-100 text-lg mb-1 group-hover:text-teal-700 dark:group-hover:text-teal-400 transition-colors">
-                                                            {rx.name}
+                                                            {rx.name || 'Prescription'}
                                                         </h4>
                                                         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
                                                             <span className="flex items-center gap-1"><CalendarClock size={12} /> {rx.date}</span>
@@ -175,10 +162,10 @@ const MedicineLog = () => {
                                                                 <div className="flex justify-between items-center mb-0.5">
                                                                     <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{med.name}</span>
                                                                     <Badge variant="outline" className="bg-transparent border-slate-200 dark:border-slate-700 text-xs py-0 h-5 text-slate-500">
-                                                                        x{med.count}
+                                                                        x{med.quantity || med.count}
                                                                     </Badge>
                                                                 </div>
-                                                                <p className="text-xs text-slate-500 font-medium">{med.dosage} • {med.type}</p>
+                                                                <p className="text-xs text-slate-500 font-medium">{med.dosage} {med.type ? `• ${med.type}` : ''}</p>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -253,8 +240,8 @@ const MedicineLog = () => {
                                     <Badge className="bg-teal-400/20 text-teal-50 border-0 mb-3 backdrop-blur-md">
                                         Verified Prescription
                                     </Badge>
-                                    <h2 className="text-2xl font-bold mb-1 leading-tight">{selectedRx.name}</h2>
-                                    <p className="text-teal-100/80 font-medium text-sm">Valid until Feb 24, 2024</p>
+                                    <h2 className="text-2xl font-bold mb-1 leading-tight">{selectedRx.name || 'Prescription'}</h2>
+                                    <p className="text-teal-100/80 font-medium text-sm">Valid until {selectedRx.expiry}</p>
                                 </motion.div>
                             </div>
 

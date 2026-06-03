@@ -56,8 +56,12 @@ function App() {
                                 <Route path="/" element={<Navigate to="/login" replace />} />
                             </Route>
 
-                            {/* Patient Routes (Patient mode doesn't strictly enforce backend roles in this prototype) */}
-                            <Route element={<PatientLayout />}>
+                            {/* Patient Routes */}
+                            <Route element={
+                                <ProtectedRoute allowedRoles={['PATIENT']}>
+                                    <PatientLayout />
+                                </ProtectedRoute>
+                            }>
                                 <Route path="/patient/dashboard" element={<PatientDashboard />} />
                                 <Route path="/patient/medicine-log" element={<MedicineLog />} />
                                 <Route path="/patient/prescriptions" element={<PrescriptionsPage />} />

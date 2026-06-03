@@ -126,7 +126,47 @@ export const api = {
         logout: () => apiClient('/auth/logout', { method: 'POST' }),
     },
 
-    // === Patients ===
+    // === Users (Auth-linked models) ===
+    users: {
+        search: (identifier) => apiClient(`/users/search/${encodeURIComponent(identifier)}`),
+    },
+
+    // === Consultations ===
+    consultations: {
+        create: (data) => apiClient('/consultations', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+        getHistory: (patientId) => apiClient(`/consultations/patient/${patientId}`),
+        getDoctorHistory: (doctorId) => apiClient(`/consultations/doctor/${doctorId}`),
+    },
+
+    // === Admin ===
+    admin: {
+        getStats: () => apiClient('/admin/stats'),
+        getUsers: (filters = {}) => {
+            const params = new URLSearchParams();
+            Object.entries(filters).forEach(([key, val]) => {
+                if (val) params.set(key, val);
+            });
+            const query = params.toString();
+            return apiClient(`/admin/users${query ? `?${query}` : ''}`);
+        },
+    },
+
+    // === Audit ===
+    audit: {
+        getLogs: (filters = {}) => {
+            const params = new URLSearchParams();
+            Object.entries(filters).forEach(([key, val]) => {
+                if (val) params.set(key, val);
+            });
+            const query = params.toString();
+            return apiClient(`/audit/logs${query ? `?${query}` : ''}`);
+        }
+    },
+
+    // === Patients (External Models) ===
     patients: {
         list: () => apiClient('/patients'),
         getById: (id) => apiClient(`/patients/${id}`),
@@ -146,14 +186,15 @@ export const api = {
 
     // === Prescriptions ===
     prescriptions: {
-        list: () => apiClient('/prescriptions/my-prescriptions'),
+        list: (patientId) => apiClient(`/prescriptions/patient/${patientId}`),
+        getMyPrescriptions: () => apiClient('/prescriptions/my-prescriptions'),
         create: (data) => apiClient('/prescriptions', {
             method: 'POST',
             body: JSON.stringify(data),
         }),
-        verifyQr: (qrToken) => apiClient('/prescriptions/verify-qr', {
+        verifyQr: (qrData) => apiClient('/prescriptions/verify-qr', {
             method: 'POST',
-            body: JSON.stringify({ qrToken }),
+            body: JSON.stringify({ qrToken: qrData }),
         }),
     },
 
@@ -205,3 +246,5 @@ export const api = {
     // === Health ===
     health: () => fetch(`${API_BASE_URL.replace('/api', '')}/health`).then(r => r.json()),
 };
+
+export default api;

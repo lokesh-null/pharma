@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Activity, FileText, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { api } from '@/lib/api';
 
 const StatCard = ({ title, value, icon: Icon, trend, colorClass }) => (
     <Card className="overflow-hidden">
@@ -26,6 +27,28 @@ const StatCard = ({ title, value, icon: Icon, trend, colorClass }) => (
 );
 
 const DashboardPage = () => {
+    const [stats, setStats] = useState({
+        totalUsers: 0,
+        dailyPrescriptions: 0,
+        totalAuditLogs: 0,
+        totalConsultations: 0
+    });
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await api.admin.getStats();
+                setStats(res);
+            } catch (error) {
+                console.error("Failed to fetch admin stats", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchStats();
+    }, []);
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -35,25 +58,25 @@ const DashboardPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard 
                     title="Total Users" 
-                    value="0" 
+                    value={isLoading ? '...' : stats.totalUsers} 
                     icon={Users} 
                     colorClass="bg-blue-500" 
                 />
                 <StatCard 
                     title="Daily Prescriptions" 
-                    value="0" 
+                    value={isLoading ? '...' : stats.dailyPrescriptions} 
                     icon={FileText} 
                     colorClass="bg-teal-500" 
                 />
                 <StatCard 
                     title="System Actions" 
-                    value="0" 
+                    value={isLoading ? '...' : stats.totalAuditLogs} 
                     icon={Activity} 
                     colorClass="bg-purple-500" 
                 />
                 <StatCard 
-                    title="Security Alerts" 
-                    value="0" 
+                    title="Total Consultations" 
+                    value={isLoading ? '...' : stats.totalConsultations} 
                     icon={AlertTriangle} 
                     colorClass="bg-red-500" 
                 />

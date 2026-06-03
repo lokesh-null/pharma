@@ -5,15 +5,9 @@ import { Card } from '@/components/ui/card';
 import { Plus, Trash2, Search, CheckCircle, Pill, CalendarClock } from 'lucide-react';
 import PageTransition from '@/components/ui/PageTransition';
 
-const medicinesMock = [
-    { id: 1, name: "Dolo 650mg", type: "Tablet" },
-    { id: 2, name: "Cetirizine 10mg", type: "Tablet" },
-    { id: 3, name: "Azithromycin 500mg", type: "Tablet" },
-    { id: 4, name: "Pan 40", type: "Tablet" },
-    { id: 5, name: "Montelukast", type: "Tablet" }
-];
-
 import { toast } from '@/lib/toast';
+import api from '@/lib/api';
+import { useAuthStore } from '@/lib/authStore';
 
 const DraftPrescriptionPage = () => {
     const { id } = useParams();
@@ -22,6 +16,13 @@ const DraftPrescriptionPage = () => {
     // State
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedMeds, setSelectedMeds] = useState([]);
+    const [availableMedicines, setAvailableMedicines] = useState([]);
+    const [isSaving, setIsSaving] = useState(false);
+    const { user } = useAuthStore();
+
+    React.useEffect(() => {
+        api.medicines.list().then(res => setAvailableMedicines(res.medicines || []));
+    }, []);
 
     // Add Med Logic
     const addMed = (med) => {
@@ -48,13 +49,30 @@ const DraftPrescriptionPage = () => {
         setSelectedMeds(newMeds);
     };
 
-    const handleIssue = () => {
+    const handleIssue = async () => {
         if (selectedMeds.length === 0) {
             toast.warning("Please add at least one medicine.");
             return;
         }
-        toast.success("Prescription Digitally Signed & Issued!");
-        navigate('/doctor/activity');
+
+        setIsSaving(true);
+        try {
+            await api.prescriptions.create({
+                patientId: id,
+                medicines: selectedMeds.map(m => ({
+                    medicineId: m.id,
+                    quantity: parseInt(m.qty),
+                    dosage: m.dosage
+                }))
+            });
+            toast.success("Prescription Digitally Signed & Issued!");
+            navigate('/doctor');
+        } catch (error) {
+            console.error("Failed to issue prescription:", error);
+            toast.error("Failed to issue prescription");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -80,7 +98,7 @@ const DraftPrescriptionPage = () => {
                 {/* Search Results Dropdown */}
                 {searchQuery && (
                     <div className="absolute top-full left-0 w-full bg-white border border-slate-100 shadow-xl rounded-xl mt-2 overflow-hidden max-h-48 overflow-y-auto">
-                        {medicinesMock
+                        {availableMedicines
                             .filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
                             .map(med => (
                                 <div
@@ -89,7 +107,7 @@ const DraftPrescriptionPage = () => {
                                     className="p-3 hover:bg-slate-50 cursor-pointer flex justify-between items-center border-b border-slate-50 last:border-0"
                                 >
                                     <span className="font-medium text-slate-800">{med.name}</span>
-                                    <span className="text-xs text-slate-400">{med.type}</span>
+                                    <span className="text-xs text-slate-400">{med.category || 'Medicine'}</span>
                                 </div>
                             ))
                         }
@@ -156,7 +174,7 @@ const DraftPrescriptionPage = () => {
                 <div className="text-right">
                     <div className="w-40 h-16 bg-white border border-slate-200 rounded-lg flex items-center justify-center mb-2 overflow-hidden relative">
                         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                        <p className="font-handwriting text-xl text-blue-900 -rotate-6">Dr. Sharma</p>
+                        <p className="font-handwriting text-xl text-blue-900 -rotate-6">{user?.fullName || 'Doctor'}</p>
                     </div>
                     <div className="flex items-center justify-end gap-1 text-xs text-green-600 font-bold uppercase tracking-wider">
                         <CheckCircle size={12} /> Digitally Signed
@@ -168,9 +186,10 @@ const DraftPrescriptionPage = () => {
             <div className="fixed bottom-20 left-0 w-full px-6 py-4 bg-white/80 backdrop-blur-md border-t border-slate-200 shadow-lg-up">
                 <Button
                     onClick={handleIssue}
+                    disabled={isSaving}
                     className="w-full max-w-md mx-auto h-12 bg-teal-700 hover:bg-teal-800 text-white rounded-xl shadow-lg shadow-teal-700/20"
                 >
-                    Issue Prescription
+                    {isSaving ? "Issuing..." : "Issue Prescription"}
                 </Button>
             </div>
         </PageTransition>

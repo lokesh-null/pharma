@@ -31,11 +31,11 @@ const DoctorHeader = () => {
 
                 <div className="flex items-center gap-3">
                     <div className="text-right hidden sm:block">
-                        <p className="text-sm font-semibold text-slate-900">{user?.name || 'Dr. Sharma'}</p>
+                        <p className="text-sm font-semibold text-slate-900">{user?.fullName || 'Dr. Sharma'}</p>
                         <p className="text-xs text-slate-500 capitalize">{user?.role?.toLowerCase() || 'General Physician'}</p>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white shadow-sm">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Doctor'}`} alt="Doc" />
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'Doctor'}`} alt="Doc" />
                     </div>
                 </div>
 

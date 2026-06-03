@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,14 +17,21 @@ const PatientDetailsPage = () => {
     useEffect(() => {
         const fetchPatient = async () => {
             try {
-                const data = await api.patients.getById(id);
+                // Fetch patient by ID or Email
+                const data = await api.users.search(id);
+                
+                // Fetch patient medical history
+                const historyData = await api.consultations.getHistory(data.patient.id);
+                
                 setPatient({
-                    name: data.name,
-                    id: data.id,
-                    gender: "Not specified",
+                    name: data.patient.fullName,
+                    id: data.patient.id,
+                    email: data.patient.email,
+                    gender: data.patient.gender || "Not specified",
                     bloodGroup: "N/A",
+                    img: data.patient.profilePicture,
                     summary: { allergies: [], chronicConditions: [], pastConditions: [] },
-                    history: []
+                    history: historyData.history || []
                 });
             } catch (error) {
                 console.error("Failed to fetch patient:", error);
@@ -122,7 +129,7 @@ const PatientDetailsPage = () => {
 
             {/* Action Button */}
             <Button
-                onClick={() => navigate(`/doctor/diagnose/${id}`)}
+                onClick={() => navigate(`/doctor/diagnose/${patient.id}`)}
                 className="w-full h-14 text-lg font-bold bg-slate-900 text-white rounded-xl shadow-xl shadow-slate-900/10 hover:bg-slate-800 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
             >
                 <Stethoscope size={22} /> Diagnose Patient
@@ -152,16 +159,29 @@ const PatientDetailsPage = () => {
                                     </Badge>
                                 </div>
 
-                                <div className="bg-slate-50 rounded-lg p-3 text-sm">
-                                    <p className="text-xs font-bold text-slate-400 uppercase mb-2">Prescription</p>
-                                    <ul className="space-y-1">
-                                        {record.medicines.map((med, idx) => (
-                                            <li key={idx} className="flex items-center gap-2 text-slate-700">
-                                                <CheckCircle2 size={12} className="text-slate-400" /> {med}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <div className="mt-3 pt-2 border-t border-slate-200 flex justify-between items-center">
+                                    <div className="bg-slate-50 rounded-lg p-3 text-sm">
+                                        <p className="text-xs font-bold text-slate-400 uppercase mb-2">Details</p>
+                                        <p className="text-slate-600 text-sm mb-2">{record.notes}</p>
+                                        {record.symptoms && record.symptoms.length > 0 && (
+                                            <div className="mb-2 flex gap-1 flex-wrap">
+                                                {record.symptoms.map((sym, idx) => (
+                                                    <Badge key={idx} variant="outline" className="text-[10px] bg-white">{sym}</Badge>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {record.medicines && record.medicines.length > 0 && (
+                                            <>
+                                                <p className="text-xs font-bold text-slate-400 uppercase mb-2 mt-3">Prescription</p>
+                                                <ul className="space-y-1">
+                                                    {record.medicines.map((med, idx) => (
+                                                        <li key={idx} className="flex items-center gap-2 text-slate-700">
+                                                            <CheckCircle2 size={12} className="text-slate-400" /> {med}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </>
+                                        )}
+                                        <div className="mt-3 pt-2 border-t border-slate-200 flex justify-between items-center">
                                         <span className="text-[10px] text-slate-400">{record.date}</span>
                                         {/* Mock Signature */}
                                         <div className="text-[10px] font-handwriting text-slate-600 italic">Signed: {record.doctor}</div>

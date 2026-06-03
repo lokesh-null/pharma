@@ -5,19 +5,22 @@ import { LogOut, Bell, ShieldCheck, PenTool, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/lib/toast';
+import { useAuthStore } from '@/lib/authStore';
 
 const DoctorProfilePage = () => {
     const navigate = useNavigate();
+    const { user, logout } = useAuthStore();
     const [showOtpModal, setShowOtpModal] = useState(false);
     const [otp, setOtp] = useState('');
     const [signatureStep, setSignatureStep] = useState('verify'); // verify | upload | success
 
-    const handleSignOut = () => {
+    const handleSignOut = async () => {
+        await logout();
         navigate('/login');
     };
 
     const handleVerifyOtp = () => {
-        if (otp === '123456') {
+        if (otp.length === 6) {
             setSignatureStep('upload');
         } else {
             toast.error('Invalid OTP');
@@ -45,9 +48,9 @@ const DoctorProfilePage = () => {
                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Doctor" alt="Doc" className="w-full h-full rounded-full bg-slate-100" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-bold">Dr. Sharma</h2>
-                        <p className="text-teal-100 text-sm">General Physician</p>
-                        <p className="text-teal-200 text-xs mt-1">Apollo Gleneagles</p>
+                        <h2 className="text-lg font-bold">{user?.fullName || 'Doctor'}</h2>
+                        <p className="text-teal-100 text-sm capitalize">{user?.role?.toLowerCase() || 'General Physician'}</p>
+                        <p className="text-teal-200 text-xs mt-1">PharmaLync Network</p>
                     </div>
                 </div>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl" />
@@ -65,19 +68,19 @@ const DoctorProfilePage = () => {
                 <div className="p-4 border-b border-slate-50 flex justify-between items-center hover:bg-slate-50 transition-colors">
                     <div>
                         <p className="text-xs text-slate-400 uppercase font-bold">Phone Number</p>
-                        <p className="text-slate-800 font-medium">+91 98765 43210</p>
+                        <p className="text-slate-800 font-medium">{user?.phone || 'Not provided'}</p>
                     </div>
                 </div>
                 <div className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
                     <div>
                         <p className="text-xs text-slate-400 uppercase font-bold">Email</p>
-                        <p className="text-slate-800 font-medium">dr.sharma@apollo.com</p>
+                        <p className="text-slate-800 font-medium">{user?.email}</p>
                     </div>
                 </div>
                 <div className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
                     <div>
                         <p className="text-xs text-slate-400 uppercase font-bold">Location</p>
-                        <p className="text-slate-800 font-medium">Salt Lake, Sector V, Kolkata</p>
+                        <p className="text-slate-800 font-medium">PharmaLync Network Center</p>
                     </div>
                 </div>
             </Card>

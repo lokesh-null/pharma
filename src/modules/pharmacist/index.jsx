@@ -6,6 +6,8 @@ import { ShieldCheck, AlertOctagon, ScanLine, ShoppingCart, CheckCircle2 } from 
 import { motion, AnimatePresence } from 'framer-motion';
 import Logo from '@/components/ui/Logo';
 import { useAuthStore } from '@/lib/authStore';
+import { api } from '@/lib/api';
+import { toast } from '@/lib/toast';
 
 const SafetyCheckBanner = ({ status }) => { // status: match | mismatch | idle
     if (status === 'idle') return null;
@@ -42,7 +44,18 @@ const SafetyCheckBanner = ({ status }) => { // status: match | mismatch | idle
     );
 };
 
-const SmartBilling = ({ isMatched, onComplete }) => {
+const SmartBilling = ({ prescription, scannedMedicine, onComplete, isDispensing }) => {
+    if (!prescription) {
+        return (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 h-full flex flex-col justify-center items-center text-slate-400">
+                <ShoppingCart className="mb-4 text-slate-300" size={48} />
+                <p>Scan a prescription to start billing.</p>
+            </div>
+        )
+    }
+
+    // For simplicity, we just list the prescription medicines. 
+    // In a real app we'd calculate price from inventory.
     return (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 h-full flex flex-col">
             <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
@@ -50,58 +63,75 @@ const SmartBilling = ({ isMatched, onComplete }) => {
                 Billing Summary
             </h3>
 
-            <div className="space-y-4 flex-1">
-                <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                    <div>
-                        <p className="font-semibold text-slate-900">Paracetamol 500mg</p>
-                        <p className="text-xs text-slate-500">1 Strip (10 tabs)</p>
+            <div className="space-y-4 flex-1 overflow-y-auto">
+                {prescription.medicines.map((med, i) => (
+                    <div key={i} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                        <div>
+                            <p className="font-semibold text-slate-900">{med.name}</p>
+                            <p className="text-xs text-slate-500">{med.dosage} (Qty: {med.quantity})</p>
+                        </div>
+                        <span className="text-xs font-bold text-slate-400">
+                            {scannedMedicine?.name === med.name ? (
+                                <Badge variant="success" className="bg-green-100 text-green-700 border-0">Scanned</Badge>
+                            ) : 'Pending'}
+                        </span>
                     </div>
-                    <span className="font-bold text-slate-700">₹32.00</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                    <div>
-                        <p className="font-semibold text-slate-900">Cetirizine 10mg</p>
-                        <p className="text-xs text-slate-500">1 Strip (10 tabs)</p>
-                    </div>
-                    <span className="font-bold text-slate-700">₹45.00</span>
-                </div>
+                ))}
 
                 <div className="h-px bg-slate-200 my-4" />
-
-                <div className="flex justify-between items-center text-lg">
-                    <span className="text-slate-500 font-medium">Total</span>
-                    <span className="font-bold text-slate-900">₹77.00</span>
-                </div>
             </div>
 
             <Button
                 size="lg"
-                className={`w-full mt-6 text-lg font-bold h-14 ${!isMatched ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-teal-700 hover:bg-teal-800 shadow-xl shadow-teal-900/20'}`}
-                disabled={!isMatched}
+                className={`w-full mt-6 text-lg font-bold h-14 ${!scannedMedicine ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-teal-700 hover:bg-teal-800 shadow-xl shadow-teal-900/20'}`}
+                disabled={!scannedMedicine || isDispensing}
                 onClick={onComplete}
             >
-                {isMatched ? 'Complete Sale' : 'Verify to Bill'}
+                {isDispensing ? 'Processing...' : 'Complete Sale & Dispense'}
             </Button>
         </div>
     );
 };
 
-const DualScanDashboard = ({ setMatchStatus }) => {
+const DualScanDashboard = ({ onVerifyPrescription, onVerifyMedicine, isVerifyingRx, isVerifyingMed }) => {
+    const [rxToken, setRxToken] = useState('');
+    const [medToken, setMedToken] = useState('');
+
     return (
         <div className="grid grid-cols-2 gap-4 h-64 mb-6">
             {/* Patient Scan */}
-            <Card className="border-dashed border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group flex flex-col items-center justify-center gap-3" onClick={() => setMatchStatus('scanning')}>
-                <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                    <ScanLine className="text-slate-400 group-hover:text-teal-600" size={32} />
+            <Card className="border-2 border-slate-200 bg-white p-4 flex flex-col items-center justify-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center shadow-sm">
+                    <ScanLine className="text-teal-600" size={24} />
                 </div>
-                <p className="text-sm font-semibold text-slate-400 group-hover:text-teal-700">Scan Patient QR</p>
+                <p className="text-sm font-semibold text-slate-700">Scan Prescription QR</p>
+                <input 
+                    type="text" 
+                    placeholder="Enter QR Token" 
+                    className="w-full text-xs p-2 border rounded" 
+                    value={rxToken}
+                    onChange={(e) => setRxToken(e.target.value)}
+                />
+                <Button size="sm" className="w-full" disabled={!rxToken || isVerifyingRx} onClick={() => onVerifyPrescription(rxToken)}>
+                    {isVerifyingRx ? 'Verifying...' : 'Verify Rx'}
+                </Button>
             </Card>
             {/* Medicine Scan */}
-            <Card className="border-dashed border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group flex flex-col items-center justify-center gap-3">
-                <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                    <ScanLine className="text-slate-400 group-hover:text-blue-600" size={32} />
+            <Card className="border-2 border-slate-200 bg-white p-4 flex flex-col items-center justify-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center shadow-sm">
+                    <ScanLine className="text-blue-600" size={24} />
                 </div>
-                <p className="text-sm font-semibold text-slate-400 group-hover:text-blue-700">Scan Medicine</p>
+                <p className="text-sm font-semibold text-slate-700">Scan Medicine QR</p>
+                <input 
+                    type="text" 
+                    placeholder="Enter QR Token" 
+                    className="w-full text-xs p-2 border rounded" 
+                    value={medToken}
+                    onChange={(e) => setMedToken(e.target.value)}
+                />
+                <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700" disabled={!medToken || isVerifyingMed} onClick={() => onVerifyMedicine(medToken)}>
+                    {isVerifyingMed ? 'Verifying...' : 'Verify Med'}
+                </Button>
             </Card>
         </div>
     )
@@ -110,18 +140,71 @@ const DualScanDashboard = ({ setMatchStatus }) => {
 const PharmacistModule = () => {
     const [matchStatus, setMatchStatus] = useState('idle'); // idle | scanning | match | mismatch
     const [saleCompleted, setSaleCompleted] = useState(false);
-    const [scannedPatient, setScannedPatient] = useState({ name: 'Verified Patient', id: 'AUTH-1029' });
+    const [prescription, setPrescription] = useState(null);
+    const [scannedMedicine, setScannedMedicine] = useState(null);
+    const [isVerifyingRx, setIsVerifyingRx] = useState(false);
+    const [isVerifyingMed, setIsVerifyingMed] = useState(false);
+    const [isDispensing, setIsDispensing] = useState(false);
+    const [txHash, setTxHash] = useState('');
     const { user } = useAuthStore();
 
-    const handleScanFlow = () => {
-        setMatchStatus('scanning');
-        setTimeout(() => {
-            setMatchStatus('match');
-        }, 1500);
+    const handleVerifyPrescription = async (token) => {
+        setIsVerifyingRx(true);
+        try {
+            const res = await api.prescriptions.verifyQr(token);
+            if (res.valid) {
+                setPrescription(res.prescription);
+                toast.success('Prescription verified');
+                if (scannedMedicine) {
+                    checkMatch(res.prescription, scannedMedicine);
+                }
+            }
+        } catch (error) {
+            toast.error('Invalid or expired Prescription QR');
+        } finally {
+            setIsVerifyingRx(false);
+        }
     };
 
-    const handleComplete = () => {
-        setSaleCompleted(true);
+    const handleVerifyMedicine = async (token) => {
+        setIsVerifyingMed(true);
+        try {
+            const res = await api.medicines.verifyQr(token);
+            if (res.valid) {
+                if (res.medicine.blockchainStatus === 'DISPENSED') {
+                    toast.error('This medicine has already been dispensed!');
+                    return;
+                }
+                setScannedMedicine(res.medicine);
+                toast.success('Medicine verified');
+                if (prescription) {
+                    checkMatch(prescription, res.medicine);
+                }
+            }
+        } catch (error) {
+            toast.error('Invalid Medicine QR');
+        } finally {
+            setIsVerifyingMed(false);
+        }
+    };
+
+    const checkMatch = (rx, med) => {
+        const matches = rx.medicines.some(m => m.name.toLowerCase() === med.name.toLowerCase());
+        setMatchStatus(matches ? 'match' : 'mismatch');
+    };
+
+    const handleComplete = async () => {
+        if (!scannedMedicine?.id) return;
+        setIsDispensing(true);
+        try {
+            const res = await api.medicines.dispense(scannedMedicine.id);
+            setTxHash(res.txHash);
+            setSaleCompleted(true);
+        } catch (error) {
+            toast.error('Failed to dispense medicine');
+        } finally {
+            setIsDispensing(false);
+        }
     };
 
     if (saleCompleted) {
@@ -136,8 +219,14 @@ const PharmacistModule = () => {
                         <CheckCircle2 size={48} />
                     </div>
                     <h2 className="text-3xl font-bold text-teal-900 mb-2">Sale Completed</h2>
-                    <p className="text-slate-500 mb-8">Transaction ID: #PH-8922-XJ</p>
-                    <Button onClick={() => { setSaleCompleted(false); setMatchStatus('idle'); }}>New Sale</Button>
+                    <p className="text-slate-500 mb-8">Transaction Hash: {txHash}</p>
+                    <Button onClick={() => { 
+                        setSaleCompleted(false); 
+                        setMatchStatus('idle'); 
+                        setPrescription(null);
+                        setScannedMedicine(null);
+                        setTxHash('');
+                    }}>New Sale</Button>
                 </motion.div>
             </div>
         )
@@ -160,31 +249,25 @@ const PharmacistModule = () => {
                 <div>
                     <SafetyCheckBanner status={matchStatus} />
 
-                    {matchStatus === 'idle' && <DualScanDashboard setMatchStatus={handleScanFlow} />}
-
-                    {matchStatus === 'scanning' && (
-                        <div className="h-64 flex flex-col items-center justify-center bg-white rounded-2xl border border-slate-100">
-                            <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                                className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full mb-4"
-                            />
-                            <p className="text-slate-500 font-medium">Verifying cross-reference...</p>
-                        </div>
-                    )}
+                    <DualScanDashboard 
+                        onVerifyPrescription={handleVerifyPrescription}
+                        onVerifyMedicine={handleVerifyMedicine}
+                        isVerifyingRx={isVerifyingRx}
+                        isVerifyingMed={isVerifyingMed}
+                    />
 
                     {matchStatus === 'match' && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-teal-50 rounded-2xl p-6 border border-teal-100">
-                            <h4 className="font-semibold text-teal-900 mb-4">Patient Verified</h4>
+                            <h4 className="font-semibold text-teal-900 mb-4">Match Confirmed</h4>
                             <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 rounded-full bg-slate-200 overflow-hidden">
-                                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${scannedPatient.id}`} alt="Patient" />
+                                <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center text-green-700">
+                                    <ShieldCheck size={24} />
                                 </div>
                                 <div>
-                                    <p className="font-bold text-slate-800">{scannedPatient.name}</p>
-                                    <p className="text-xs text-slate-500">Aadhaar Verified</p>
+                                    <p className="font-bold text-slate-800">{scannedMedicine.name}</p>
+                                    <p className="text-xs text-slate-500">Authorized for dispensing</p>
                                 </div>
-                                <Badge variant="success" className="ml-auto">Active Rx</Badge>
+                                <Badge variant="success" className="ml-auto bg-green-500 text-white">Valid</Badge>
                             </div>
                         </motion.div>
                     )}
@@ -192,7 +275,12 @@ const PharmacistModule = () => {
 
                 {/* Right Panel: Billing */}
                 <div className="h-[500px]">
-                    <SmartBilling isMatched={matchStatus === 'match'} onComplete={handleComplete} />
+                    <SmartBilling 
+                        prescription={prescription} 
+                        scannedMedicine={scannedMedicine}
+                        onComplete={handleComplete} 
+                        isDispensing={isDispensing}
+                    />
                 </div>
             </div>
         </div>

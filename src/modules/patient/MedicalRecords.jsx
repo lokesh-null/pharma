@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Pill, Check, Calendar, AlertCircle, ChevronRight, ShieldCheck, X, Store, Stethoscope, Banknote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuthStore } from '@/lib/authStore';
+import { api } from '@/lib/api';
+import { useEffect } from 'react';
 
 const TransactionDetails = ({ transaction, onClose }) => {
     if (!transaction) return null;
@@ -102,42 +105,28 @@ const TransactionDetails = ({ transaction, onClose }) => {
     );
 };
 
-const mockTransactions = [
-    {
-        id: 1,
-        medicine: 'Dolo 650',
-        dosage: '650mg Tablet',
-        pharmacy: 'Apollo Pharmacy',
-        branch: 'Indiranagar, Bangalore',
-        date: '24 Jan 2024',
-        price: '₹32.00',
-        doctor: 'Dr. Sharma'
-    },
-    {
-        id: 2,
-        medicine: 'Amoxicillin',
-        dosage: '500mg Capsule',
-        pharmacy: 'MedPlus',
-        branch: 'Koramangala, Bangalore',
-        date: '10 Jan 2024',
-        price: '₹120.00',
-        doctor: 'Dr. Anjali'
-    },
-    {
-        id: 3,
-        medicine: 'Cetirizine',
-        dosage: '10mg Tablet',
-        pharmacy: 'Apollo Pharmacy',
-        branch: 'Indiranagar, Bangalore',
-        date: '02 Jan 2024',
-        price: '₹45.00',
-        doctor: 'Dr. Rao'
-    }
-];
-
 const MedicalRecords = () => {
+    const { user } = useAuthStore();
     const [activeTab, setActiveTab] = useState('purchase'); // purchase | history
     const [selectedTx, setSelectedTx] = useState(null);
+    const [history, setHistory] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (!user?.id) return;
+            try {
+                setIsLoading(true);
+                const res = await api.consultations.getHistory(user.id);
+                setHistory(res.history || []);
+            } catch (error) {
+                console.error("Failed to fetch medical history", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchHistory();
+    }, [user?.id]);
 
     return (
         <div className="mt-6 mb-24">
@@ -190,51 +179,51 @@ const MedicalRecords = () => {
                     {/* History List */}
                     <div className="space-y-3">
                         <h3 className="text-sm font-semibold text-slate-500 px-1">Recent Transactions</h3>
-
-                        {mockTransactions.map((item, i) => (
-                            <motion.div
-                                key={item.id}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                            >
-                                <div
-                                    onClick={() => setSelectedTx(item)}
-                                    className="group flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
-                                            <Pill size={20} />
-                                        </div>
-                                        <div>
-                                            {/* Main Title: Medicine Name */}
-                                            <h4 className="text-base font-bold text-slate-900 leading-tight">
-                                                {item.medicine}
-                                            </h4>
-                                            {/* Subtitle: Pharmacy Name */}
-                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-0.5">
-                                                <span className="text-xs text-slate-500 font-medium">{item.pharmacy}</span>
-                                                <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-300" />
-                                                <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full font-medium flex items-center w-fit gap-0.5">
-                                                    <Check size={8} /> Verified
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <ChevronRight size={20} className="text-slate-300 group-hover:text-teal-600 transition-colors" />
-                                </div>
-                            </motion.div>
-                        ))}
+                        <div className="text-center py-8 text-slate-500 text-sm bg-white rounded-xl border border-slate-100 shadow-sm">
+                            No recent purchases found.
+                        </div>
                     </div>
                 </div>
             )}
 
             {activeTab === 'history' && (
-                <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                        <ShieldCheck size={32} className="opacity-50" />
-                    </div>
-                    <p className="text-sm">Medical history details locked.</p>
+                <div className="space-y-4">
+                    {isLoading ? (
+                        <div className="text-center py-8 text-slate-500 text-sm">Loading medical history...</div>
+                    ) : history.length === 0 ? (
+                        <div className="text-center py-8 text-slate-500 text-sm bg-white rounded-xl border border-slate-100 shadow-sm">
+                            No medical history found.
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {history.map((item, i) => (
+                                <motion.div
+                                    key={item.id}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.1 }}
+                                >
+                                    <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
+                                                <Stethoscope size={20} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-base font-bold text-slate-900 leading-tight">
+                                                    {item.diagnosis}
+                                                </h4>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className="text-xs text-slate-500 font-medium">Dr. {item.doctor}</span>
+                                                    <span className="w-1 h-1 rounded-full bg-slate-300" />
+                                                    <span className="text-xs text-slate-500 font-medium">{item.date}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

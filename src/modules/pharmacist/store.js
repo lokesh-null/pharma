@@ -5,47 +5,27 @@ export const usePharmacyStore = create(
   persist(
     (set, get) => ({
       // --- INVENTORY ---
-      inventory: [
-        { id: 'm1', name: 'Paracetamol 500mg', stock: 120, price: 2, threshold: 50, category: 'Pain Relief' },
-        { id: 'm2', name: 'Dolo 650', stock: 45, price: 3, threshold: 50, category: 'Fever' }, // Low stock
-        { id: 'm3', name: 'Augmentin 625', stock: 15, price: 22, threshold: 20, category: 'Antibiotic' }, // Low stock
-        { id: 'm4', name: 'Cetirizine 10mg', stock: 200, price: 5, threshold: 30, category: 'Allergy' },
-        { id: 'm5', name: 'Pantop 40', stock: 80, price: 12, threshold: 40, category: 'Gastritis' },
-        { id: 'm6', name: 'Azithromycin 500', stock: 12, price: 18, threshold: 15, category: 'Antibiotic' },
-        { id: 'm7', name: 'Cough Syrup 100ml', stock: 5, price: 95, threshold: 10, category: 'Syrup' }, // Critical
-      ],
+      inventory: [],
+      
+      fetchInventory: async () => {
+        try {
+          const res = await fetch('http://localhost:3000/api/medicines', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          });
+          const data = await res.json();
+          if (data.medicines) {
+            set({ inventory: data.medicines });
+          }
+        } catch (error) {
+          console.error("Failed to fetch inventory", error);
+        }
+      },
 
       // --- PATIENTS & PRESCRIPTIONS ---
       // Mocking a connected database of patients
-      patients: [
-        {
-          id: 'p1',
-          name: 'Harish Kumar',
-          age: 45,
-          gender: 'Male',
-          phone: '9876543210',
-          prescriptions: [
-            {
-              id: 'rx_001',
-              doctor: 'Dr. A. Sharma',
-              date: '2025-01-29', // Today
-              status: 'pending',
-              medicines: [
-                { medicineId: 'm3', name: 'Augmentin 625', dosage: '1-0-1', days: 5, maxQty: 10, dispensed: 0 },
-                { medicineId: 'm2', name: 'Dolo 650', dosage: '1-0-1', days: 3, maxQty: 6, dispensed: 0 }
-              ]
-            }
-          ]
-        },
-        {
-          id: 'p2',
-          name: 'Priya Singh',
-          age: 28,
-          gender: 'Female',
-          phone: '9876541122',
-          prescriptions: []
-        }
-      ],
+      // --- PATIENTS & PRESCRIPTIONS ---
+      // We will rely on searching for users instead of a hardcoded list
+      patients: [],
 
       // --- ACTIVE SESSION ---
       currentPatient: null,
@@ -75,12 +55,10 @@ export const usePharmacyStore = create(
         updatedInventory[medIndex] = { ...med, stock: med.stock - quantity };
 
         // 2. Update Prescription (if applicable)
-        let updatedPatients = [...patients];
         let updatedCurrentPatient = { ...currentPatient };
 
-        if (prescriptionId && currentPatient) {
-          const pIndex = patients.findIndex(p => p.id === currentPatient.id);
-          const pat = { ...patients[pIndex] };
+        if (prescriptionId && currentPatient && currentPatient.prescriptions) {
+          const pat = { ...currentPatient };
           const rxIndex = pat.prescriptions.findIndex(rx => rx.id === prescriptionId);
           
           if (rxIndex !== -1) {
@@ -103,7 +81,6 @@ export const usePharmacyStore = create(
                 if (allFilled) rx.status = 'completed';
 
                 pat.prescriptions[rxIndex] = rx;
-                updatedPatients[pIndex] = pat;
                 updatedCurrentPatient = pat; 
              }
           }
@@ -123,7 +100,6 @@ export const usePharmacyStore = create(
 
         set({
           inventory: updatedInventory,
-          patients: updatedPatients,
           currentPatient: updatedCurrentPatient,
           transactions: [transaction, ...transactions]
         });

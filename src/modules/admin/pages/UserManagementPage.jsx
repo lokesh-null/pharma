@@ -6,15 +6,30 @@ import { Input } from '@/components/ui/input';
 import { Search, UserPlus, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const mockUsers = [];
+import { api } from '@/lib/api';
 
 const UserManagementPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
+    const [users, setUsers] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const filteredUsers = mockUsers.filter(user => 
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    React.useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const res = await api.admin.getUsers();
+                setUsers(res.users || []);
+            } catch (error) {
+                console.error("Failed to fetch users", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchUsers();
+    }, []);
+
+    const filteredUsers = users.filter(user => 
+        (user.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (user.email || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -66,10 +81,10 @@ const UserManagementPage = () => {
                                         <TableCell className="pl-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">
-                                                    {user.name.charAt(0)}
+                                                    {(user.fullName || 'U').charAt(0)}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="font-medium text-slate-900">{user.name}</span>
+                                                    <span className="font-medium text-slate-900">{user.fullName}</span>
                                                     <span className="text-xs text-slate-500">{user.email}</span>
                                                 </div>
                                             </div>
@@ -77,11 +92,11 @@ const UserManagementPage = () => {
                                         <TableCell>
                                             <Badge variant="secondary" className="bg-slate-100 text-slate-700">{user.role}</Badge>
                                         </TableCell>
-                                        <TableCell className="text-slate-600 text-sm">{user.department}</TableCell>
+                                        <TableCell className="text-slate-600 text-sm">Main Branch</TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                <div className={`w-2 h-2 rounded-full ${user.status === 'Active' ? 'bg-green-500' : 'bg-red-400'}`} />
-                                                <span className="text-sm font-medium text-slate-700">{user.status}</span>
+                                                <div className={`w-2 h-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-red-400'}`} />
+                                                <span className="text-sm font-medium text-slate-700">{user.isActive ? 'Active' : 'Inactive'}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right pr-6">
@@ -97,13 +112,19 @@ const UserManagementPage = () => {
                                     </motion.tr>
                                 ))}
                             </AnimatePresence>
-                            {filteredUsers.length === 0 && (
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center py-12 text-slate-500">
+                                        Loading users...
+                                    </TableCell>
+                                </TableRow>
+                            ) : filteredUsers.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center py-12 text-slate-500">
                                         No users found matching your search.
                                     </TableCell>
                                 </TableRow>
-                            )}
+                            ) : null}
                         </TableBody>
                     </Table>
                 </CardContent>

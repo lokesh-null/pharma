@@ -99,9 +99,6 @@ const PatientDashboard = () => {
                             <Sparkles size={16} className="text-teal-500" />
                             Today's Plan
                         </h3>
-                        <span className="text-xs font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
-                            3 Pending
-                        </span>
                     </div>
                     <RemindersList />
                 </div>

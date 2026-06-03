@@ -23,6 +23,9 @@ import consentRoutes from './routes/consent.routes';
 import auditRoutes from './routes/audit.routes';
 import medicineRoutes from './routes/medicine.routes';
 import prescriptionRoutes from './routes/prescription.routes';
+import userRoutes from './routes/user.routes';
+import consultationRoutes from './routes/consultation.routes';
+import adminRoutes from './routes/admin.routes';
 
 // Initialize Prisma
 const prisma = new PrismaClient();
@@ -87,6 +90,9 @@ function initializeRoutes(): void {
     app.use('/api/audit', auditRoutes);
     app.use('/api/medicines', medicineRoutes);
     app.use('/api/prescriptions', prescriptionRoutes);
+    app.use('/api/users', userRoutes);
+    app.use('/api/consultations', consultationRoutes);
+    app.use('/api/admin', adminRoutes);
 
     // 404 handler
     app.use((_req, res) => {

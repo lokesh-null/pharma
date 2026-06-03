@@ -5,10 +5,26 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-const mockLogs = [];
+import { api } from '@/lib/api';
 
 const AuditLogPage = () => {
+    const [logs, setLogs] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    React.useEffect(() => {
+        const fetchLogs = async () => {
+            try {
+                const res = await api.audit.getLogs();
+                setLogs(res.logs || []);
+            } catch (error) {
+                console.error("Failed to fetch audit logs", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchLogs();
+    }, []);
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -44,27 +60,35 @@ const AuditLogPage = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {mockLogs.map((log) => (
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center py-12 text-slate-500">
+                                        Loading audit logs...
+                                    </TableCell>
+                                </TableRow>
+                            ) : logs.map((log) => (
                                 <TableRow key={log.id}>
-                                    <TableCell className="text-slate-500 text-sm whitespace-nowrap">{log.time}</TableCell>
+                                    <TableCell className="text-slate-500 text-sm whitespace-nowrap">
+                                        {new Date(log.timestamp).toLocaleString()}
+                                    </TableCell>
                                     <TableCell className="font-medium">{log.action}</TableCell>
                                     <TableCell>
                                         <div className="flex flex-col">
-                                            <span className="text-sm">{log.user}</span>
-                                            <span className="text-xs text-slate-400">{log.ip}</span>
+                                            <span className="text-sm">{log.user?.fullName || 'Unknown User'}</span>
+                                            <span className="text-xs text-slate-400">{log.user?.role || 'SYSTEM'}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="outline" className="text-slate-600 bg-slate-50">{log.role}</Badge>
+                                        <Badge variant="outline" className="text-slate-600 bg-slate-50">{log.resourceType}</Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={log.status === 'Success' ? 'success' : 'destructive'} className={log.status === 'Success' ? 'bg-teal-50 text-teal-700 border-teal-200' : ''}>
-                                            {log.status}
+                                        <Badge variant="success" className="bg-teal-50 text-teal-700 border-teal-200">
+                                            Logged
                                         </Badge>
                                     </TableCell>
                                 </TableRow>
                             ))}
-                            {mockLogs.length === 0 && (
+                            {!isLoading && logs.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center py-12 text-slate-500">
                                         No audit logs available.

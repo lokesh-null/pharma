@@ -148,9 +148,12 @@ router.post(
                     id: prescription.id,
                     patientId: prescription.patientId,
                     medicines: prescription.medicines.map(m => ({
+                        medicineId: m.medicineId,
                         name: m.medicine.name,
                         dosage: m.dosage,
-                        quantity: m.quantity
+                        maxQty: m.quantity,
+                        dispensed: 0,
+                        days: 5
                     })),
                     issuedAt: prescription.createdAt,
                     verifiedAt: new Date().toISOString()
@@ -186,7 +189,7 @@ router.get(
                             medicine: true
                         }
                     },
-                    issuedByUser: {
+                    issuer: {
                         select: {
                             fullName: true
                         }
@@ -199,7 +202,7 @@ router.get(
             const mapped = prescriptions.map(rx => ({
                 id: rx.id,
                 status: rx.dispensed ? 'completed' : 'issued',
-                doctor: rx.issuedByUser?.fullName || 'Unknown Doctor',
+                doctor: rx.issuer?.fullName || 'Unknown Doctor',
                 specialty: 'General', // Not in schema, fallback
                 hospital: 'PharmaLync Network', // Not in schema, fallback
                 date: new Date(rx.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -216,6 +219,63 @@ router.get(
             res.json({ prescriptions: mapped });
         } catch (error) {
             console.error('Fetch my prescriptions error:', error);
+            res.status(500).json({ error: 'Failed to fetch prescriptions' });
+        }
+    }
+);
+
+/**
+ * GET /api/prescriptions/patient/:patientId
+ * Fetch all prescriptions for a specific patient
+ * Requires: DOCTOR, PHARMACIST, or ADMIN role
+ */
+router.get(
+    '/patient/:patientId',
+    authenticate,
+    requireRole(UserRole.DOCTOR, UserRole.PHARMACIST, UserRole.ADMIN, UserRole.NURSE),
+    async (req: Request, res: Response) => {
+        try {
+            const { patientId } = req.params;
+
+            const prescriptions = await prisma.prescription.findMany({
+                where: { patientId },
+                include: {
+                    medicines: {
+                        include: {
+                            medicine: true
+                        }
+                    },
+                    issuer: {
+                        select: {
+                            fullName: true
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' }
+            });
+
+            // Map it to the format expected by the frontend
+            const mapped = prescriptions.map(rx => ({
+                id: rx.id,
+                status: rx.dispensed ? 'completed' : 'issued',
+                doctor: rx.issuer?.fullName || 'Unknown Doctor',
+                specialty: 'General', 
+                hospital: 'PharmaLync Network',
+                date: new Date(rx.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+                medicines: rx.medicines.map(m => ({
+                    medicineId: m.medicineId,
+                    name: m.medicine.name,
+                    dosage: m.dosage,
+                    maxQty: m.quantity, // Added so DispensePage logic works (medRx.maxQty)
+                    dispensed: 0, // Mocked for now, in real app track dispensed qty
+                    days: 5 // Mocked for now
+                })),
+                expiry: new Date(new Date(rx.createdAt).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+            }));
+
+            res.json({ prescriptions: mapped });
+        } catch (error) {
+            console.error('Fetch patient prescriptions error:', error);
             res.status(500).json({ error: 'Failed to fetch prescriptions' });
         }
     }

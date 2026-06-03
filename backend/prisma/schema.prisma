@@ -30,8 +30,14 @@ model User {
   otps            Otp[]
   sessions        Session[]
   auditLogs       AuditLog[]
-  prescriptions   Prescription[]
+  prescriptionsReceived Prescription[] @relation("PatientPrescriptions")
+  prescriptionsIssued   Prescription[] @relation("IssuedPrescriptions")
   consentsGranted Consent[] @relation("GrantedConsents")
+  consultationsAsDoctor Consultation[] @relation("DoctorConsultations")
+  consultationsAsPatient Consultation[] @relation("PatientConsultations")
+  notifications   Notification[]
+  medicalHistoryAsPatient MedicalHistory[] @relation("PatientHistory")
+  medicalHistoryAsDoctor  MedicalHistory[] @relation("DoctorHistory")
 }
 
 // OTP Model — Email OTP verification
@@ -77,7 +83,6 @@ model Patient {
   updatedAt        DateTime @updatedAt
 
   // Relations
-  prescriptions Prescription[]
   consents      Consent[]
 }
 
@@ -145,8 +150,8 @@ model Prescription {
   updatedAt   DateTime  @updatedAt
 
   // Relations
-  patient   Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  issuer    User                   @relation(fields: [issuedBy], references: [id])
+  patient   User                   @relation("PatientPrescriptions", fields: [patientId], references: [id], onDelete: Cascade)
+  issuer    User                   @relation("IssuedPrescriptions", fields: [issuedBy], references: [id])
   medicines PrescriptionMedicine[]
 }
 
@@ -163,4 +168,47 @@ model PrescriptionMedicine {
   medicine     Medicine     @relation(fields: [medicineId], references: [id])
 
   @@unique([prescriptionId, medicineId])
+}
+
+// Consultation Model
+model Consultation {
+  id            String    @id @default(uuid())
+  doctorId      String
+  patientId     String
+  symptoms      String    @default("[]") // JSON string of symptoms
+  diagnosis     String    @default("")
+  notes         String    @default("")
+  followUpDate  DateTime?
+  status        String    @default("Active") // Active, Completed
+  priority      String    @default("Normal")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  doctor        User      @relation("DoctorConsultations", fields: [doctorId], references: [id])
+  patient       User      @relation("PatientConsultations", fields: [patientId], references: [id])
+}
+
+// Notification Model
+model Notification {
+  id            String    @id @default(uuid())
+  userId        String
+  message       String
+  type          String    @default("INFO")
+  read          Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Medical History Model
+model MedicalHistory {
+  id            String    @id @default(uuid())
+  patientId     String
+  doctorId      String
+  diagnosis     String
+  notes         String
+  date          DateTime  @default(now())
+
+  patient       User      @relation("PatientHistory", fields: [patientId], references: [id])
+  doctor        User      @relation("DoctorHistory", fields: [doctorId], references: [id])
 }

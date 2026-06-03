@@ -8,6 +8,7 @@ import { Activity, ArrowRight, Save } from 'lucide-react';
 import PageTransition from '@/components/ui/PageTransition';
 
 import { toast } from '@/lib/toast';
+import api from '@/lib/api';
 
 const DiagnosisPage = () => {
     const { id } = useParams(); // Patient ID
@@ -15,12 +16,34 @@ const DiagnosisPage = () => {
     const [symptoms, setSymptoms] = useState('');
     const [diagnosis, setDiagnosis] = useState('');
 
-    const handleSaveAndProceed = () => {
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSaveAndProceed = async () => {
         if (!diagnosis) {
             toast.warning("Please enter a diagnosis.");
             return;
         }
-        navigate(`/doctor/prescription/${id}`);
+        
+        setIsSaving(true);
+        try {
+            // Split symptoms string by comma and trim
+            const symptomsList = symptoms.split(',').map(s => s.trim()).filter(s => s);
+            
+            const data = await api.consultations.create({
+                patientId: id,
+                symptoms: symptomsList,
+                diagnosis,
+                notes: '', // Can add notes field later
+                priority: 'Normal'
+            });
+            
+            navigate(`/doctor/prescription/${id}`);
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to save consultation.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -63,9 +86,10 @@ const DiagnosisPage = () => {
             <div className="fixed bottom-20 left-0 w-full px-6 py-4 bg-white/80 backdrop-blur-md border-t border-slate-200">
                 <Button
                     onClick={handleSaveAndProceed}
+                    disabled={isSaving}
                     className="w-full max-w-md mx-auto h-12 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg"
                 >
-                    Proceed to Prescription <ArrowRight className="ml-2" size={18} />
+                    {isSaving ? "Saving..." : "Proceed to Prescription"} {!isSaving && <ArrowRight className="ml-2" size={18} />}
                 </Button>
             </div>
         </PageTransition>

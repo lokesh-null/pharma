@@ -8,10 +8,14 @@ import { Sparkles, Sun, Moon, Calendar, Zap, Activity } from 'lucide-react';
 import PageTransition from '@/components/ui/PageTransition';
 import MotionCard from '@/components/ui/MotionCard';
 
+import { useAuthStore } from '@/lib/authStore';
+
 const PatientDashboard = () => {
     const { scrollY } = useScroll();
     const [greeting, setGreeting] = useState('');
     const [timeIcon, setTimeIcon] = useState(null);
+    const { user } = useAuthStore();
+    const firstName = user?.fullName?.split(' ')[0] || 'Patient';
 
     // Dynamic Greeting Logic
     useEffect(() => {
@@ -74,7 +78,7 @@ const PatientDashboard = () => {
                         </div>
                         <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 tracking-tight leading-tight">
                             {greeting},<br />
-                            <span className="text-teal-600 dark:text-teal-400">Harish</span>
+                            <span className="text-teal-600 dark:text-teal-400">{firstName}</span>
                         </h1>
                     </div>
                 </motion.div>

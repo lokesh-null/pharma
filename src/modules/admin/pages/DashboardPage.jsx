@@ -35,30 +35,26 @@ const DashboardPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard 
                     title="Total Users" 
-                    value="1,248" 
+                    value="0" 
                     icon={Users} 
-                    trend="+12%" 
                     colorClass="bg-blue-500" 
                 />
                 <StatCard 
                     title="Daily Prescriptions" 
-                    value="432" 
+                    value="0" 
                     icon={FileText} 
-                    trend="+5%" 
                     colorClass="bg-teal-500" 
                 />
                 <StatCard 
                     title="System Actions" 
-                    value="8,942" 
+                    value="0" 
                     icon={Activity} 
-                    trend="+18%" 
                     colorClass="bg-purple-500" 
                 />
                 <StatCard 
                     title="Security Alerts" 
-                    value="3" 
+                    value="0" 
                     icon={AlertTriangle} 
-                    trend="-2" 
                     colorClass="bg-red-500" 
                 />
             </div>
@@ -70,20 +66,9 @@ const DashboardPage = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <div key={i} className="flex items-start justify-between border-b border-slate-100 pb-4 last:border-0 last:pb-0">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
-                                            <Activity size={14} className="text-slate-500" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-900">Login Successful</p>
-                                            <p className="text-xs text-slate-500">Dr. Sharma accessed the system</p>
-                                        </div>
-                                    </div>
-                                    <span className="text-xs text-slate-400">2 mins ago</span>
-                                </div>
-                            ))}
+                            <div className="text-center py-8 text-slate-500 text-sm">
+                                No recent audit logs found.
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

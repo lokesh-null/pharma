@@ -90,26 +90,10 @@ const ClinicalTimeline = () => {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="mt-4">
-                    <TimelineEvent
-                        date="24 Jan 2024"
-                        title="Viral Fever Checkup"
-                        doctor="Dr. Sharma"
-                        verified={true}
-                    />
-                    <TimelineEvent
-                        date="12 Dec 2023"
-                        title="Dental Cleaning"
-                        doctor="Dr. Anjali"
-                        verified={true}
-                        locked={true}
-                    />
-                    <TimelineEvent
-                        date="05 Nov 2023"
-                        title="General Consultation"
-                        doctor="Dr. Rao"
-                        verified={true}
-                    />
+                <div className="mt-8 flex flex-col items-center justify-center text-center text-slate-400">
+                    <Activity size={32} className="text-slate-300 mb-2" />
+                    <p className="text-sm font-medium">No clinical history available</p>
+                    <p className="text-xs mt-1 max-w-[200px]">Scan a patient's PharmaLync ID or QR code to view their medical timeline.</p>
                 </div>
             </CardContent>
         </Card>

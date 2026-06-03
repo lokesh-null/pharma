@@ -65,6 +65,7 @@ router.post(
             const nameEncrypted = encryptionService.encryptPII(name);
             const dobEncrypted = dob ? encryptionService.encryptPII(dob) : undefined;
             const phoneEncrypted = phone ? encryptionService.encryptPII(phone) : undefined;
+            const phoneHash = phone ? encryptionService.hash(phone) : undefined;
             const addressEncrypted = address ? encryptionService.encryptPII(address) : undefined;
 
             const patient = await prisma.patient.create({
@@ -74,6 +75,7 @@ router.post(
                     nameEncrypted,
                     dobEncrypted,
                     phoneEncrypted,
+                    phoneHash,
                     addressEncrypted,
                     consentGiven
                 }
@@ -100,7 +102,7 @@ router.post(
 router.get(
     '/:id',
     authenticate,
-    requireRole(UserRole.ADMIN, UserRole.NURSE),
+    requireRole(UserRole.ADMIN, UserRole.DOCTOR),
     async (req: Request, res: Response) => {
         try {
             const { id } = req.params;
@@ -193,7 +195,10 @@ router.put(
             const updateData: any = {};
             if (name) updateData.nameEncrypted = encryptionService.encryptPII(name);
             if (dob) updateData.dobEncrypted = encryptionService.encryptPII(dob);
-            if (phone) updateData.phoneEncrypted = encryptionService.encryptPII(phone);
+            if (phone) {
+                updateData.phoneEncrypted = encryptionService.encryptPII(phone);
+                updateData.phoneHash = encryptionService.hash(phone);
+            }
             if (address) updateData.addressEncrypted = encryptionService.encryptPII(address);
             if (consentGiven !== undefined) updateData.consentGiven = consentGiven;
 
@@ -239,7 +244,7 @@ router.delete(
 router.get(
     '/',
     authenticate,
-    requireRole(UserRole.ADMIN, UserRole.NURSE),
+    requireRole(UserRole.ADMIN, UserRole.DOCTOR),
     async (_req: Request, res: Response) => {
         try {
             const patients = await prisma.patient.findMany({

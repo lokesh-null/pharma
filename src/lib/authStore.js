@@ -8,34 +8,13 @@ export const useAuthStore = create(
             user: null,
             isAuthenticated: false,
 
-            // Call this after a successful login response
+            // Set auth state after successful OTP verification
             setAuth: (user, accessToken, refreshToken) => {
                 localStorage.setItem('access_token', accessToken);
                 if (refreshToken) {
                     localStorage.setItem('refresh_token', refreshToken);
                 }
                 set({ user, isAuthenticated: true });
-            },
-
-            // Login action that calls the API and updates state
-            login: async (email, password) => {
-                try {
-                    const data = await api.auth.login(email, password);
-                    
-                    localStorage.setItem('access_token', data.accessToken);
-                    if (data.refreshToken) {
-                        localStorage.setItem('refresh_token', data.refreshToken);
-                    }
-                    
-                    set({ 
-                        user: data.user, 
-                        isAuthenticated: true 
-                    });
-                    
-                    return data;
-                } catch (error) {
-                    throw error;
-                }
             },
 
             // Logout action that calls backend then clears state

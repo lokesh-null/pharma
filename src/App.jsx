@@ -67,7 +67,7 @@ function App() {
                             {/* Doctor Routes (Requires ADMIN or NURSE) */}
                             <Route path="/doctor/register" element={<DoctorRegistration />} />
                             <Route element={
-                                <ProtectedRoute allowedRoles={['ADMIN', 'NURSE']}>
+                                <ProtectedRoute allowedRoles={['DOCTOR', 'ADMIN']}>
                                     <DoctorLayout />
                                 </ProtectedRoute>
                             }>
@@ -82,7 +82,7 @@ function App() {
 
                             {/* Pharmacist Routes (Requires PHARMACY or ADMIN) */}
                             <Route element={
-                                <ProtectedRoute allowedRoles={['PHARMACY', 'ADMIN']}>
+                                <ProtectedRoute allowedRoles={['PHARMACIST', 'ADMIN']}>
                                     <PharmacistLayout />
                                 </ProtectedRoute>
                             }>

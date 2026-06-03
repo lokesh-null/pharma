@@ -33,7 +33,7 @@ const createPrescriptionSchema = {
 router.post(
     '/',
     authenticate,
-    requireRole(UserRole.ADMIN, UserRole.NURSE),
+    requireRole(UserRole.ADMIN, UserRole.DOCTOR),
     validateRequest(createPrescriptionSchema),
     auditLog('CREATE_PRESCRIPTION', 'prescription'),
     async (req: Request, res: Response) => {
@@ -100,7 +100,7 @@ router.post(
 router.post(
     '/verify-qr',
     authenticate,
-    requireRole(UserRole.PHARMACY, UserRole.ADMIN),
+    requireRole(UserRole.PHARMACIST, UserRole.ADMIN),
     async (req: Request, res: Response) => {
         try {
             const { qrToken } = req.body;
@@ -162,6 +162,61 @@ router.post(
                 valid: false,
                 error: 'SECURITY_VIOLATION: Prescription QR is invalid, tampered, or fraudulent'
             });
+        }
+    }
+);
+
+/**
+ * GET /api/prescriptions/my-prescriptions
+ * Fetch all prescriptions for the currently authenticated patient
+ */
+router.get(
+    '/my-prescriptions',
+    authenticate,
+    requireRole(UserRole.PATIENT),
+    async (req: Request, res: Response) => {
+        try {
+            const patientId = req.user!.userId;
+
+            const prescriptions = await prisma.prescription.findMany({
+                where: { patientId },
+                include: {
+                    medicines: {
+                        include: {
+                            medicine: true
+                        }
+                    },
+                    issuedByUser: {
+                        select: {
+                            fullName: true
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' }
+            });
+
+            // Map it to the format expected by the frontend
+            const mapped = prescriptions.map(rx => ({
+                id: rx.id,
+                status: rx.dispensed ? 'completed' : 'issued',
+                doctor: rx.issuedByUser?.fullName || 'Unknown Doctor',
+                specialty: 'General', // Not in schema, fallback
+                hospital: 'PharmaLync Network', // Not in schema, fallback
+                date: new Date(rx.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+                medicines: rx.medicines.map(m => ({
+                    name: m.medicine.name,
+                    dosage: m.dosage,
+                    duration: 'N/A', // Not in schema
+                    timing: 'As directed', // Not in schema
+                    quantity: m.quantity
+                })),
+                expiry: new Date(new Date(rx.createdAt).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+            }));
+
+            res.json({ prescriptions: mapped });
+        } catch (error) {
+            console.error('Fetch my prescriptions error:', error);
+            res.status(500).json({ error: 'Failed to fetch prescriptions' });
         }
     }
 );

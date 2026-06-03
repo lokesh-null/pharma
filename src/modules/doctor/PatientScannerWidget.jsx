@@ -4,12 +4,23 @@ import { Button } from '@/components/ui/button';
 import { ScanLine, Search, UserCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
+import api from '@/lib/api';
 
 const PatientScannerWidget = () => {
     const [status, setStatus] = useState('idle'); // idle | scanning | success
+    const [scannedPatient, setScannedPatient] = useState(null);
 
-    const handleScan = () => {
+    const handleScan = async () => {
         setStatus('scanning');
+        try {
+            const data = await api.patients.list();
+            if (data.patients && data.patients.length > 0) {
+                setScannedPatient(data.patients[0]);
+            }
+        } catch (error) {
+            console.error('Scan failed', error);
+        }
+        
         setTimeout(() => {
             setStatus('success');
         }, 1500);
@@ -70,9 +81,9 @@ const PatientScannerWidget = () => {
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-medical-green mb-3">
                             <UserCheck size={32} />
                         </div>
-                        <h3 className="font-bold text-lg text-slate-900">Harish Kumar</h3>
+                        <h3 className="font-bold text-lg text-slate-900">{scannedPatient?.name || 'New Patient'}</h3>
                         <div className="flex gap-2 mt-1 mb-4">
-                            <Badge variant="secondary">Male, 34</Badge>
+                            <Badge variant="secondary">Patient</Badge>
                             <Badge variant="success">Verified</Badge>
                         </div>
                         <Button size="sm" variant="outline" onClick={() => setStatus('idle')}>

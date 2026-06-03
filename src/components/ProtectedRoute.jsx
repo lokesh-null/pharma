@@ -14,9 +14,10 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
     if (allowedRoles && user && !allowedRoles.includes(user.role)) {
         // If role is not allowed, redirect to their own dashboard
         const roleRoutes = {
-            'ADMIN': '/doctor/dashboard',
-            'NURSE': '/doctor/dashboard',
-            'PHARMACY': '/pharmacist/scan'
+            'PATIENT': '/patient/dashboard',
+            'DOCTOR': '/doctor/dashboard',
+            'PHARMACIST': '/pharmacist/scan',
+            'ADMIN': '/admin/dashboard',
         };
         const fallback = roleRoutes[user.role] || '/login';
         return <Navigate to={fallback} replace />;

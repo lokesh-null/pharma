@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { getAuthService } from '../services/auth.service';
 
-// User role constants (SQLite doesn't support enums)
+// User role constants — unified across all dashboards
 export const UserRole = {
+    PATIENT: 'PATIENT',
+    DOCTOR: 'DOCTOR',
+    PHARMACIST: 'PHARMACIST',
     ADMIN: 'ADMIN',
-    NURSE: 'NURSE',
-    STAFF: 'STAFF',
-    PHARMACY: 'PHARMACY',
 } as const;
 
 export type UserRoleType = typeof UserRole[keyof typeof UserRole];

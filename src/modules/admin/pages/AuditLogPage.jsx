@@ -6,13 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const mockLogs = [
-    { id: 1, action: 'User Login', user: 'dr.sharma@pharmalync.in', role: 'Doctor', ip: '192.168.1.1', time: '2023-10-25 10:23 AM', status: 'Success' },
-    { id: 2, action: 'Prescription Created', user: 'dr.sharma@pharmalync.in', role: 'Doctor', ip: '192.168.1.1', time: '2023-10-25 10:45 AM', status: 'Success' },
-    { id: 3, action: 'Medicine Dispensed', user: 'pharmacy@pharmalync.in', role: 'Pharmacist', ip: '192.168.1.5', time: '2023-10-25 11:15 AM', status: 'Success' },
-    { id: 4, action: 'Failed Login', user: 'unknown@test.com', role: 'Unknown', ip: '10.0.0.5', time: '2023-10-25 11:30 AM', status: 'Failed' },
-    { id: 5, action: 'User Created', user: 'admin@pharmalync.in', role: 'Admin', ip: '127.0.0.1', time: '2023-10-25 09:00 AM', status: 'Success' },
-];
+const mockLogs = [];
 
 const AuditLogPage = () => {
     return (
@@ -70,6 +64,13 @@ const AuditLogPage = () => {
                                     </TableCell>
                                 </TableRow>
                             ))}
+                            {mockLogs.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center py-12 text-slate-500">
+                                        No audit logs available.
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>

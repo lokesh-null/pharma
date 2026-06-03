@@ -88,7 +88,7 @@ const ScanQR = () => {
                 prescriptions: [result.prescription]
             };
 
-            setPatient(patientData.id);
+            setPatient(patientData);
             navigate('/pharmacist/dispense');
         } catch (error) {
             setErrorMsg("Verification Failed: " + error.message);

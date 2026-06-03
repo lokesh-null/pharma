@@ -32,7 +32,7 @@ const registerMedicineSchema = {
 router.post(
     '/',
     authenticate,
-    requireRole(UserRole.PHARMACY, UserRole.ADMIN),
+    requireRole(UserRole.PHARMACIST, UserRole.ADMIN),
     validateRequest(registerMedicineSchema),
     async (req: Request, res: Response) => {
         try {
@@ -121,7 +121,7 @@ router.get(
 router.post(
     '/:id/dispense',
     authenticate,
-    requireRole(UserRole.PHARMACY),
+    requireRole(UserRole.PHARMACIST),
     auditLog('MEDICINE_DISPENSE', 'medicine'),
     async (req: Request, res: Response) => {
         try {
@@ -194,7 +194,7 @@ router.get(
 router.get(
     '/:id/qr',
     authenticate,
-    requireRole(UserRole.ADMIN, UserRole.PHARMACY),
+    requireRole(UserRole.ADMIN, UserRole.PHARMACIST),
     async (req: Request, res: Response) => {
         try {
             const { id } = req.params;

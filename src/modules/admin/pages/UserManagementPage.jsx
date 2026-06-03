@@ -7,12 +7,7 @@ import { Search, UserPlus, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const mockUsers = [
-    { id: 1, name: 'Dr. Rahul Sharma', email: 'dr.sharma@pharmalync.in', role: 'Doctor', status: 'Active', department: 'Cardiology' },
-    { id: 2, name: 'City Pharmacy', email: 'pharmacy@pharmalync.in', role: 'Pharmacist', status: 'Active', department: 'Dispensary' },
-    { id: 3, name: 'Nurse Joy', email: 'joy@pharmalync.in', role: 'Nurse', status: 'Inactive', department: 'Emergency' },
-    { id: 4, name: 'System Admin', email: 'admin@pharmalync.in', role: 'Admin', status: 'Active', department: 'IT' },
-];
+const mockUsers = [];
 
 const UserManagementPage = () => {
     const [searchQuery, setSearchQuery] = useState('');

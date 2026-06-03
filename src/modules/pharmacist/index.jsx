@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { ShieldCheck, AlertOctagon, ScanLine, ShoppingCart, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Logo from '@/components/ui/Logo';
+import { useAuthStore } from '@/lib/authStore';
 
 const SafetyCheckBanner = ({ status }) => { // status: match | mismatch | idle
     if (status === 'idle') return null;
@@ -109,6 +110,8 @@ const DualScanDashboard = ({ setMatchStatus }) => {
 const PharmacistModule = () => {
     const [matchStatus, setMatchStatus] = useState('idle'); // idle | scanning | match | mismatch
     const [saleCompleted, setSaleCompleted] = useState(false);
+    const [scannedPatient, setScannedPatient] = useState({ name: 'Verified Patient', id: 'AUTH-1029' });
+    const { user } = useAuthStore();
 
     const handleScanFlow = () => {
         setMatchStatus('scanning');
@@ -145,7 +148,7 @@ const PharmacistModule = () => {
             <header className="mb-8 flex items-center justify-between">
                 <div>
                     <Logo size="md" className="mb-1" />
-                    <p className="text-slate-500 text-sm font-medium">Apollo Pharmacy - Indiranagar Branch</p>
+                    <p className="text-slate-500 text-sm font-medium">{user?.fullName || 'Pharmacist'} POS Terminal</p>
                 </div>
                 <div className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">
                     POS Terminal
@@ -175,11 +178,11 @@ const PharmacistModule = () => {
                             <h4 className="font-semibold text-teal-900 mb-4">Patient Verified</h4>
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 rounded-full bg-slate-200 overflow-hidden">
-                                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Harish" alt="Patient" />
+                                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${scannedPatient.id}`} alt="Patient" />
                                 </div>
                                 <div>
-                                    <p className="font-bold text-slate-800">Harish Kumar</p>
-                                    <p className="text-xs text-slate-500">Aadhaar: **** **** 4821</p>
+                                    <p className="font-bold text-slate-800">{scannedPatient.name}</p>
+                                    <p className="text-xs text-slate-500">Aadhaar Verified</p>
                                 </div>
                                 <Badge variant="success" className="ml-auto">Active Rx</Badge>
                             </div>

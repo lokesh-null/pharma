@@ -7,17 +7,13 @@ import { useTheme } from '@/context/ThemeContext';
 
 import Logo from '@/components/ui/Logo';
 import MedicalHistoryModal from './components/MedicalHistoryModal';
+import { useAuthStore } from '@/lib/authStore';
 
 const ConsentLogsModal = ({ isOpen, onClose }) => {
-    // Mock Data
-    const [activeSessions, setActiveSessions] = useState([
-        { id: 1, doctor: 'Dr. Sarah Smith', hospital: 'City Care Hospital', start: '09:00 PM', end: '11:00 PM', purpose: 'Consultation' }
-    ]);
+    // Removed mock data for consent logs
+    const [activeSessions, setActiveSessions] = useState([]);
 
-    const history = [
-        { id: 101, doctor: 'Dr. John Doe', date: '24 Jan 2024', duration: '20 mins', status: 'Completed' },
-        { id: 102, pharmacist: 'Green Cross Pharmacy', date: '24 Jan 2024', duration: '5 mins', status: 'Auto-Revoked' }
-    ];
+    const history = [];
 
     const revokeAccess = (id) => {
         setActiveSessions(prev => prev.filter(s => s.id !== id));
@@ -114,6 +110,8 @@ const ProfileHeader = () => {
     const [showMedicalHistory, setShowMedicalHistory] = useState(false);
 
     const { theme, toggleTheme } = useTheme();
+    const { user, logout } = useAuthStore();
+    const firstName = user?.fullName?.split(' ')[0] || 'Patient';
 
     return (
         <>
@@ -130,7 +128,7 @@ const ProfileHeader = () => {
                     {/* Greeting */}
                     <div className="flex flex-col border-l border-slate-200 dark:border-slate-700 pl-3 ml-1">
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Welcome</span>
-                        <span className="text-sm font-bold text-teal-900 dark:text-teal-100 leading-none">Harish</span>
+                        <span className="text-sm font-bold text-teal-900 dark:text-teal-100 leading-none">{firstName}</span>
                     </div>
                 </div>
 
@@ -152,7 +150,7 @@ const ProfileHeader = () => {
                             className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border-2 border-white dark:border-slate-800 shadow-sm ring-1 ring-teal-100 dark:ring-teal-900 transition-transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-teal-400"
                         >
                             <img
-                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Harish"
+                                src={user?.profilePicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || 'default'}`}
                                 alt="Profile"
                                 className="h-full w-full object-cover"
                             />
@@ -214,8 +212,10 @@ const ProfileHeader = () => {
 
                                         <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
 
-                                        {/* Sign Out (Placeholder) */}
-                                        <button className="w-full text-left px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3">
+                                        {/* Sign Out */}
+                                        <button 
+                                            onClick={() => logout()}
+                                            className="w-full text-left px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3">
                                             <LogOut size={16} />
                                             Sign Out
                                         </button>

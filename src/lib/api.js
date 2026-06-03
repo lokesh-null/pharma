@@ -53,7 +53,14 @@ const apiClient = async (endpoint, options = {}) => {
     }
 
     if (!response.ok) {
-        const error = new Error(data.error || data.message || `Request failed (${response.status})`);
+        let errorMessage = data.error || data.message || `Request failed (${response.status})`;
+        
+        // Extract specific validation error if present
+        if (data.details && data.details.body && data.details.body.length > 0) {
+            errorMessage = data.details.body[0].message;
+        }
+
+        const error = new Error(errorMessage);
         error.status = response.status;
         error.data = data;
         throw error;
@@ -90,15 +97,27 @@ async function attemptTokenRefresh() {
  * API namespace with all endpoints
  */
 export const api = {
-    // === Auth ===
+    // === Auth (Email OTP) ===
     auth: {
-        login: (email, password) => apiClient('/auth/login', {
+        checkEmail: (email) => apiClient('/auth/check-email', {
             method: 'POST',
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email }),
         }),
         register: (userData) => apiClient('/auth/register', {
             method: 'POST',
             body: JSON.stringify(userData),
+        }),
+        sendOtp: (email) => apiClient('/auth/send-otp', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+        }),
+        verifyOtp: (email, otp) => apiClient('/auth/verify-otp', {
+            method: 'POST',
+            body: JSON.stringify({ email, otp }),
+        }),
+        resendOtp: (email) => apiClient('/auth/resend-otp', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
         }),
         refresh: (refreshToken) => apiClient('/auth/refresh', {
             method: 'POST',
@@ -127,6 +146,7 @@ export const api = {
 
     // === Prescriptions ===
     prescriptions: {
+        list: () => apiClient('/prescriptions/my-prescriptions'),
         create: (data) => apiClient('/prescriptions', {
             method: 'POST',
             body: JSON.stringify(data),

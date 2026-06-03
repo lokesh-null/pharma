@@ -2,12 +2,17 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, Clock, CheckCircle2, AlertCircle, X, Download, Printer } from 'lucide-react';
+import { FileText, Clock, CheckCircle2, AlertCircle, X, Download, Printer, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import api from '@/lib/api';
+import { useAuthStore } from '@/lib/authStore';
 
 const PrescriptionsPage = () => {
     const [activeTab, setActiveTab] = useState('issued'); // issued, partial, completed, expired
     const [selectedRx, setSelectedRx] = useState(null);
+    const [allPrescriptions, setAllPrescriptions] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const { user } = useAuthStore();
 
     const tabs = [
         { id: 'issued', label: 'Issued' },
@@ -16,96 +21,21 @@ const PrescriptionsPage = () => {
         { id: 'expired', label: 'Expired' }
     ];
 
-    // Mock Data
-    const allPrescriptions = [
-        // Issued (Fresh, untouched)
-        {
-            id: 'RX-2024-001',
-            status: 'issued',
-            doctor: 'Dr. Sarah Smith',
-            specialty: 'General Physician',
-            hospital: 'City Care Hospital',
-            date: '28 Jan 2024',
-            medicines: [
-                { name: 'Dolo 650', dosage: '1-0-1', duration: '5 Days', timing: 'After Food' },
-                { name: 'Citrizine', dosage: '0-0-1', duration: '3 Days', timing: 'Before Bed' },
-                { name: 'Vitamin C', dosage: '1-0-0', duration: '10 Days', timing: 'Morning' }
-            ],
-            expiry: '28 Feb 2024'
-        },
-        {
-            id: 'RX-2024-002',
-            status: 'issued',
-            doctor: 'Dr. Rajesh Kumar',
-            specialty: 'Cardiologist',
-            hospital: 'Heart & Soul Clinic',
-            date: '27 Jan 2024',
-            medicines: [
-                { name: 'Telmisartan', dosage: '40mg', duration: '30 Days', timing: 'Morning' },
-                { name: 'Metoprolol', dosage: '25mg', duration: '30 Days', timing: 'Morning' }
-            ],
-            expiry: '27 Mar 2024'
-        },
+    // Fetch Prescriptions
+    useEffect(() => {
+        const fetchPrescriptions = async () => {
+            try {
+                const data = await api.prescriptions.list();
+                setAllPrescriptions(data.prescriptions || []);
+            } catch (error) {
+                console.error("Failed to fetch prescriptions:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-        // Partially Fulfilled (Active, some bought)
-        {
-            id: 'RX-2024-010',
-            status: 'partial',
-            doctor: 'Dr. Anjali Desai',
-            specialty: 'Dermatologist',
-            hospital: 'Skin Deep Center',
-            date: '15 Jan 2024',
-            medicines: [
-                { name: 'Isotretinoin', dosage: '10mg', duration: '20 Days', timing: 'After Dinner', status: 'Purchased' },
-                { name: 'Sunscreen Gel', dosage: 'Apply Twice', duration: '-', timing: 'Topical', status: 'Pending' }
-            ],
-            expiry: '15 Mar 2024',
-            progress: 50
-        },
-
-        // Completed (All bought, dosage ongoing)
-        {
-            id: 'RX-2023-099',
-            status: 'completed',
-            doctor: 'Dr. P. Venkat',
-            specialty: 'Orthopedic',
-            hospital: 'Ortho Care',
-            date: '10 Jan 2024',
-            medicines: [
-                { name: 'Calcium D3', dosage: '1 Tab', duration: '30 Days', timing: 'Once Daily' },
-                { name: 'Pain Relief Gel', dosage: 'Apply', duration: 'As needed', timing: 'Topical' }
-            ],
-            expiry: '10 Apr 2024'
-        },
-        {
-            id: 'RX-2023-088',
-            status: 'completed',
-            doctor: 'Dr. Emily Blunt',
-            specialty: 'Dentist',
-            hospital: 'Smile Dental',
-            date: '05 Jan 2024',
-            medicines: [
-                { name: 'Amoxicillin', dosage: '500mg', duration: '5 Days', timing: 'Thrice Daily' },
-                { name: 'Ketorolac', dosage: '10mg', duration: '3 Days', timing: 'SOS' }
-            ],
-            expiry: '05 Feb 2024'
-        },
-
-        // Expired (Old)
-        {
-            id: 'RX-2023-001',
-            status: 'expired',
-            doctor: 'Dr. Sarah Smith',
-            specialty: 'General Physician',
-            hospital: 'City Care Hospital',
-            date: '10 Oct 2023',
-            medicines: [
-                { name: 'Paracetamol', dosage: '500mg', duration: '3 Days', timing: 'SOS' },
-                { name: 'Cough Syrup', dosage: '10ml', duration: '5 Days', timing: 'Thrice Daily' }
-            ],
-            expiry: '10 Nov 2023'
-        }
-    ];
+        fetchPrescriptions();
+    }, []);
 
     const filteredPrescriptions = allPrescriptions.filter(rx => rx.status === activeTab);
 
@@ -141,7 +71,12 @@ const PrescriptionsPage = () => {
 
             {/* Content Area */}
             <div className="space-y-4">
-                {filteredPrescriptions.length > 0 ? (
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center p-12 text-teal-600">
+                        <Loader2 className="animate-spin mb-4" size={32} />
+                        <p className="text-sm font-medium text-slate-500">Loading Prescriptions...</p>
+                    </div>
+                ) : filteredPrescriptions.length > 0 ? (
                     filteredPrescriptions.map(rx => (
                         <Card
                             key={rx.id}
@@ -299,8 +234,8 @@ const PrescriptionsPage = () => {
                                     </div>
                                     <div className="text-right">
                                         <p className="text-xs uppercase text-slate-400 font-bold mb-1">Patient</p>
-                                        <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">Harish Kumar</p>
-                                        <p className="text-sm text-slate-500">Age: 32 • Male • O+</p>
+                                        <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">{user?.fullName || 'Patient'}</p>
+                                        <p className="text-sm text-slate-500">Gender: {user?.gender || 'N/A'}</p>
                                     </div>
                                 </div>
 

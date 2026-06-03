@@ -52,9 +52,9 @@ export const usePharmacyStore = create(
       transactions: [],
 
       // --- ACTIONS ---
-      setPatient: (patientId) => {
-        const patient = get().patients.find(p => p.id === patientId);
-        set({ currentPatient: patient || null });
+      setPatient: (patientData) => {
+        // We now receive the patient object directly from API instead of an ID lookup
+        set({ currentPatient: patientData || null });
       },
 
       clearSession: () => set({ currentPatient: null }),

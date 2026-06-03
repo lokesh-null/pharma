@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { KeyManagementService } from './services/kms.service';
 import { logger } from './utils/logger';
 
-// Load environment variables
+// Load environment variables (restarted to apply changes)
 dotenv.config();
 
 // Import middleware

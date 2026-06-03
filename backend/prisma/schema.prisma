@@ -10,24 +10,59 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-// User Model
+// User Model — Unified authentication across all roles
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  role         String   // ADMIN, NURSE, STAFF, PHARMACY
-  name         String   @default("")
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String    @id @default(uuid())
+  email          String    @unique
+  fullName       String
+  phone          String?
+  dateOfBirth    String?
+  gender         String?
+  role           String    // PATIENT, DOCTOR, PHARMACIST, ADMIN
+  profilePicture String?
+  isVerified     Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  lastLogin      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
+  otps            Otp[]
+  sessions        Session[]
   auditLogs       AuditLog[]
   prescriptions   Prescription[]
   consentsGranted Consent[] @relation("GrantedConsents")
 }
 
-// Patient Model (Doctor-Free)
+// OTP Model — Email OTP verification
+model Otp {
+  id           String   @id @default(uuid())
+  userId       String
+  otpCode      String   // SHA-256 hashed OTP
+  expiresAt    DateTime
+  isUsed       Boolean  @default(false)
+  attemptCount Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Session Model — Track active user sessions
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  sessionToken String   @unique
+  expiresAt    DateTime
+  deviceInfo   String?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Patient Model (Medical data — separate from auth)
 model Patient {
   id               String   @id @default(uuid())
   aadhaarEncrypted Bytes    // AES-256-GCM encrypted Aadhaar
@@ -35,6 +70,7 @@ model Patient {
   nameEncrypted    Bytes    // AES-256-GCM encrypted name
   dobEncrypted     Bytes?   // AES-256-GCM encrypted date of birth
   phoneEncrypted   Bytes?   // AES-256-GCM encrypted phone
+  phoneHash        String?  @unique // SHA-256 hash for lookups
   addressEncrypted Bytes?   // AES-256-GCM encrypted address
   consentGiven     Boolean  @default(false)
   createdAt        DateTime @default(now())
@@ -98,13 +134,13 @@ model Medicine {
 model Prescription {
   id          String    @id @default(uuid())
   patientId   String
-  issuedBy    String    // User ID (NURSE or ADMIN)
+  issuedBy    String    // User ID (DOCTOR or ADMIN)
   diagnosis   String    @default("")
   notes       String    @default("")
   qrToken     String?   // Secure QR token for this prescription
   dispensed   Boolean   @default(false)
   dispensedAt DateTime?
-  dispensedBy String?   // User ID (PHARMACY)
+  dispensedBy String?   // User ID (PHARMACIST)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

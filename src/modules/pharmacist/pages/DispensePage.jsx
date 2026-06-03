@@ -38,32 +38,7 @@ const DispensePage = () => {
     const [scanMessage, setScanMessage] = useState('');
     const [showConfirm, setShowConfirm] = useState(false);
 
-    // Ensure we have a patient (or handle walk-in logic if intended, but requirements say "Redirect to Medical Dispense Page" after Scan)
-    // If no patient is set, redirect back to scan (for safety)
-    useEffect(() => {
-        if (!currentPatient) {
-            // MOCK DATA FOR DEMO - User Request: "strightly show the mock datas" for Harish Kumar
-            usePharmacyStore.setState({
-                currentPatient: {
-                    id: 'P-12345',
-                    name: 'Harish Kumar',
-                    age: 34,
-                    prescriptions: [
-                        {
-                            id: 'RX-98765',
-                            date: 'Today',
-                            doctor: 'Dr. Sharma',
-                            medicines: [
-                                { medicineId: 'm1', name: 'Paracetamol 500mg', dosage: '1-0-1', days: 3, maxQty: 10, dispensed: 0 },
-                                { medicineId: 'm3', name: 'Augmentin 625', dosage: '1-0-1', days: 5, maxQty: 10, dispensed: 0 }
-                            ],
-                            status: 'active'
-                        }
-                    ]
-                }
-            });
-        }
-    }, [currentPatient, navigate]);
+    // No patient selected means Walk-in Customer
 
     // Derived State
     const totalAmount = billItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);

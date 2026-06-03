@@ -70,6 +70,24 @@ export const rateLimiter = rateLimit({
 });
 
 /**
+ * Stricter rate limiter for authentication endpoints
+ * Prevents OTP brute-force attacks
+ */
+export const authRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // 10 auth requests per window per IP
+    message: 'Too many authentication attempts. Please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (_req: Request, res: Response) => {
+        res.status(429).json({
+            error: 'Too Many Attempts',
+            message: 'Too many authentication attempts. Please try again later.'
+        });
+    }
+});
+
+/**
  * Input validation middleware factory
  */
 export function validateRequest(schema: {
@@ -115,6 +133,7 @@ export function validateRequest(schema: {
 
         // If there are validation errors, return 400
         if (Object.keys(errors).length > 0) {
+            console.warn('Validation failed:', JSON.stringify(errors, null, 2));
             res.status(400).json({
                 error: 'Validation failed',
                 details: errors

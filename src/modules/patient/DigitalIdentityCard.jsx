@@ -3,17 +3,18 @@ import { motion } from 'framer-motion';
 import { QrCode, CreditCard, ShieldCheck } from 'lucide-react';
 import QRCode from "react-qr-code";
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/lib/authStore';
 
 const DigitalIdentityCard = () => {
     const [isFlipped, setIsFlipped] = useState(false);
+    const { user } = useAuthStore();
 
     const patientData = {
         type: 'patient',
-        id: 'P-12345',
-        name: 'Harish Kumar',
-        dob: '12 Aug 1990',
-        bloodGroup: 'O+',
-        gender: 'Male'
+        id: user?.id,
+        name: user?.fullName || 'Patient',
+        dob: user?.dateOfBirth || 'Not specified',
+        gender: user?.gender || 'Not specified'
     };
 
     const handleFlip = () => {
@@ -48,19 +49,15 @@ const DigitalIdentityCard = () => {
 
                     {/* Content */}
                     <div className="z-10">
-                        <h3 className="text-2xl font-bold tracking-tight mb-1">Harish Kumar</h3>
+                        <h3 className="text-2xl font-bold tracking-tight mb-1">{patientData.name}</h3>
                         <div className="flex items-center gap-4 text-sm font-medium opacity-90">
                             <div className="flex flex-col">
                                 <span className="text-[10px] uppercase opacity-70">DOB</span>
-                                <span>12 Aug 1990</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-[10px] uppercase opacity-70">Blood Group</span>
-                                <span>O+ Positive</span>
+                                <span>{patientData.dob}</span>
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-[10px] uppercase opacity-70">Gender</span>
-                                <span>Male</span>
+                                <span>{patientData.gender}</span>
                             </div>
                         </div>
                     </div>

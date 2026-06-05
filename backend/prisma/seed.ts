@@ -47,7 +47,7 @@ async function seed() {
             email: 'dr.sharma@pharmalync.in',
             passwordHash: adminPassword,
             role: 'ADMIN',
-            name: 'Dr. A. Sharma',
+            fullName: 'Dr. A. Sharma',
         }
     });
     console.log(`✓ Admin/Doctor: ${admin.email} (password: admin123)`);
@@ -59,7 +59,7 @@ async function seed() {
             email: 'nurse.priya@pharmalync.in',
             passwordHash: nursePassword,
             role: 'NURSE',
-            name: 'Nurse Priya',
+            fullName: 'Nurse Priya',
         }
     });
     console.log(`✓ Nurse: ${nurse.email} (password: nurse123)`);
@@ -71,7 +71,7 @@ async function seed() {
             email: 'pharmacy@pharmalync.in',
             passwordHash: pharmacyPassword,
             role: 'PHARMACY',
-            name: 'MedPlus Pharmacy',
+            fullName: 'MedPlus Pharmacy',
         }
     });
     console.log(`✓ Pharmacist: ${pharmacist.email} (password: pharmacy123)`);

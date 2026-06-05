@@ -25,4 +25,4 @@ RUN npm run build
 EXPOSE 3000
 
 # Push schema to DB then start server
-CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma db push && node dist/src/index.js"]

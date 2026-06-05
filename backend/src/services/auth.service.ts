@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
 /**
  * Authentication Service
@@ -112,6 +113,21 @@ export class AuthService {
      */
     generateSessionToken(): string {
         return crypto.randomBytes(48).toString('hex');
+    }
+
+    /**
+     * Hash a password using bcrypt
+     */
+    async hashPassword(password: string): Promise<string> {
+        const salt = await bcrypt.genSalt(10);
+        return bcrypt.hash(password, salt);
+    }
+
+    /**
+     * Compare a raw password with a hashed password
+     */
+    async comparePassword(password: string, hash: string): Promise<boolean> {
+        return bcrypt.compare(password, hash);
     }
 }
 

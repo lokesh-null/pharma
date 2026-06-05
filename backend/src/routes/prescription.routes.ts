@@ -25,6 +25,16 @@ const createPrescriptionSchema = {
     })
 };
 
+const dispenseSchema = {
+    body: Joi.object({
+        items: Joi.array().items(Joi.object({
+            id: Joi.string().required(), // medicineId
+            quantity: Joi.number().integer().min(1).required(),
+            prescriptionId: Joi.string().allow(null).optional()
+        })).min(1).required()
+    })
+};
+
 /**
  * POST /api/prescriptions
  * Create a secure, signed prescription with a non-reversible QR token
@@ -152,7 +162,7 @@ router.post(
                         name: m.medicine.name,
                         dosage: m.dosage,
                         maxQty: m.quantity,
-                        dispensed: 0,
+                        dispensed: m.dispensed,
                         days: 5
                     })),
                     issuedAt: prescription.createdAt,
@@ -211,7 +221,8 @@ router.get(
                     dosage: m.dosage,
                     duration: 'N/A', // Not in schema
                     timing: 'As directed', // Not in schema
-                    quantity: m.quantity
+                    quantity: m.quantity,
+                    dispensed: m.dispensed
                 })),
                 expiry: new Date(new Date(rx.createdAt).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
             }));
@@ -267,7 +278,7 @@ router.get(
                     name: m.medicine.name,
                     dosage: m.dosage,
                     maxQty: m.quantity, // Added so DispensePage logic works (medRx.maxQty)
-                    dispensed: 0, // Mocked for now, in real app track dispensed qty
+                    dispensed: m.dispensed, // Real dispensed value
                     days: 5 // Mocked for now
                 })),
                 expiry: new Date(new Date(rx.createdAt).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -277,6 +288,102 @@ router.get(
         } catch (error) {
             console.error('Fetch patient prescriptions error:', error);
             res.status(500).json({ error: 'Failed to fetch prescriptions' });
+        }
+    }
+);
+
+/**
+ * POST /api/prescriptions/dispense
+ * Handle dispensing medicines (both prescription and OTC)
+ * Requires: PHARMACIST role
+ */
+router.post(
+    '/dispense',
+    authenticate,
+    requireRole(UserRole.PHARMACIST, UserRole.ADMIN),
+    validateRequest(dispenseSchema),
+    async (req: Request, res: Response) => {
+        try {
+            const { items } = req.body;
+            const pharmacistId = req.user!.userId;
+
+            // Start a transaction
+            await prisma.$transaction(async (tx) => {
+                for (const item of items) {
+                    // 1. Find the medicine to deduct stock
+                    const medicine = await tx.medicine.findUnique({ where: { id: item.id } });
+                    
+                    if (!medicine) {
+                        // Skip mock items safely in demo mode
+                        if (item.id.startsWith('MOCK-')) continue;
+                        throw new Error(`Medicine ${item.id} not found.`);
+                    }
+
+                    if (medicine.stock < item.quantity) {
+                        throw new Error(`Insufficient stock for ${medicine.name}.`);
+                    }
+
+                    // Deduct stock
+                    await tx.medicine.update({
+                        where: { id: item.id },
+                        data: { stock: { decrement: item.quantity } }
+                    });
+
+                    // 2. If it's a prescription item, enforce limit and increment dispensed
+                    if (item.prescriptionId) {
+                        const rxMed = await tx.prescriptionMedicine.findUnique({
+                            where: {
+                                prescriptionId_medicineId: {
+                                    prescriptionId: item.prescriptionId,
+                                    medicineId: item.id
+                                }
+                            }
+                        });
+
+                        if (!rxMed) {
+                            throw new Error(`Prescription medicine mapping not found.`);
+                        }
+
+                        const remaining = rxMed.quantity - rxMed.dispensed;
+                        if (item.quantity > remaining) {
+                            throw new Error(`Cannot dispense more than prescribed limit for ${medicine.name}.`);
+                        }
+
+                        // Increment dispensed
+                        await tx.prescriptionMedicine.update({
+                            where: { id: rxMed.id },
+                            data: { dispensed: { increment: item.quantity } }
+                        });
+
+                        // Check if the entire prescription is completed
+                        const allRxMeds = await tx.prescriptionMedicine.findMany({
+                            where: { prescriptionId: item.prescriptionId }
+                        });
+                        
+                        const isFullyDispensed = allRxMeds.every(m => {
+                            // Because we just updated one, we must calculate the new value for this specific item
+                            const currentDispensed = m.id === rxMed.id ? m.dispensed + item.quantity : m.dispensed;
+                            return currentDispensed >= m.quantity;
+                        });
+
+                        if (isFullyDispensed) {
+                            await tx.prescription.update({
+                                where: { id: item.prescriptionId },
+                                data: { 
+                                    dispensed: true,
+                                    dispensedAt: new Date(),
+                                    dispensedBy: pharmacistId
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+
+            res.json({ success: true, message: 'Dispense successful' });
+        } catch (error: any) {
+            console.error('Dispense error:', error.message);
+            res.status(400).json({ error: error.message || 'Dispense failed' });
         }
     }
 );

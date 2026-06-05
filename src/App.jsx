@@ -16,6 +16,9 @@ import AdminLayout from './layouts/AdminLayout';
 // Pages (Loaded eagerly for fast first paint)
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
+import CreatePasswordPage from './pages/auth/CreatePasswordPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
 // Lazy loaded modules
 const PatientDashboard = lazy(() => import('./modules/patient'));
@@ -53,6 +56,9 @@ function App() {
                             <Route element={<AuthLayout />}>
                                 <Route path="/login" element={<LoginPage />} />
                                 <Route path="/signup" element={<SignupPage />} />
+                                <Route path="/create-password" element={<CreatePasswordPage />} />
+                                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                                <Route path="/reset-password" element={<ResetPasswordPage />} />
                                 <Route path="/" element={<Navigate to="/login" replace />} />
                             </Route>
 

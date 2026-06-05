@@ -18,12 +18,16 @@ const ScanQR = () => {
     const html5QrCodeRef = useRef(null);
 
     const stopScanner = async () => {
-        if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
+        if (html5QrCodeRef.current) {
             try {
-                await html5QrCodeRef.current.stop();
+                if (html5QrCodeRef.current.isScanning) {
+                    await html5QrCodeRef.current.stop();
+                }
+                html5QrCodeRef.current.clear();
             } catch (err) {
                 console.error("Failed to stop scanner", err);
             }
+            html5QrCodeRef.current = null;
         }
     };
 
@@ -34,9 +38,17 @@ const ScanQR = () => {
         // Wait for DOM to render the scanner container
         setTimeout(async () => {
             try {
-                if (!html5QrCodeRef.current) {
-                    html5QrCodeRef.current = new Html5Qrcode("staff-reader");
+                if (html5QrCodeRef.current) {
+                    try {
+                        if (html5QrCodeRef.current.isScanning) {
+                            await html5QrCodeRef.current.stop();
+                        }
+                        html5QrCodeRef.current.clear();
+                    } catch (e) {
+                        console.error(e);
+                    }
                 }
+                html5QrCodeRef.current = new Html5Qrcode("staff-reader");
 
                 const config = {
                     fps: 10,

@@ -21,5 +21,5 @@ RUN npm run build
 # Expose port
 EXPOSE 3000
 
-# Start server
-CMD ["npm", "start"]
+# Run migrations then start server
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]

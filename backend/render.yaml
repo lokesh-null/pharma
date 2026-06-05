@@ -1,0 +1,67 @@
+databases:
+  - name: pharmalync-db
+    plan: free
+    databaseName: pharmalync
+    user: pharmalync
+
+services:
+  - type: web
+    name: pharmalync-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pharmalync-db
+          property: connectionString
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CONSENT_TOKEN_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRY
+        value: 15m
+      - key: JWT_REFRESH_EXPIRY
+        value: 7d
+      - key: CONSENT_TOKEN_EXPIRY
+        value: 60m
+      - key: BCRYPT_ROUNDS
+        value: 10
+      - key: PBKDF2_ITERATIONS
+        value: 10000
+      - key: ALLOWED_ORIGINS
+        sync: false  # Set manually to your Vercel URL
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_SECURE
+        value: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        value: "PharmaLync <noreply@pharmalync.com>"
+      - key: OTP_EXPIRY_MINUTES
+        value: 5
+      - key: OTP_MAX_ATTEMPTS
+        value: 5
+      - key: OTP_RESEND_COOLDOWN_SECONDS
+        value: 30
+      - key: OTP_MAX_RESENDS
+        value: 5

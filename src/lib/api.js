@@ -97,15 +97,23 @@ async function attemptTokenRefresh() {
  * API namespace with all endpoints
  */
 export const api = {
-    // === Auth (Email OTP) ===
+    // === Auth ===
     auth: {
-        checkEmail: (email) => apiClient('/auth/check-email', {
+        login: (identifier, password) => apiClient('/auth/login', {
             method: 'POST',
-            body: JSON.stringify({ email }),
+            body: JSON.stringify({ identifier, password }),
         }),
         register: (userData) => apiClient('/auth/register', {
             method: 'POST',
             body: JSON.stringify(userData),
+        }),
+        createPassword: (email, otp, newPassword, confirmPassword) => apiClient('/auth/create-password', {
+            method: 'POST',
+            body: JSON.stringify({ email, otp, newPassword, confirmPassword }),
+        }),
+        resetPassword: (email, otp, newPassword, confirmPassword) => apiClient('/auth/reset-password', {
+            method: 'POST',
+            body: JSON.stringify({ email, otp, newPassword, confirmPassword }),
         }),
         sendOtp: (email) => apiClient('/auth/send-otp', {
             method: 'POST',
@@ -195,6 +203,10 @@ export const api = {
         verifyQr: (qrData) => apiClient('/prescriptions/verify-qr', {
             method: 'POST',
             body: JSON.stringify({ qrToken: qrData }),
+        }),
+        dispense: (items) => apiClient('/prescriptions/dispense', {
+            method: 'POST',
+            body: JSON.stringify({ items }),
         }),
     },
 

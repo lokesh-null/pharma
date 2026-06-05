@@ -37,6 +37,7 @@ const DispensePage = () => {
     const [isScanning, setIsScanning] = useState(false);
     const [scanMessage, setScanMessage] = useState('');
     const [showConfirm, setShowConfirm] = useState(false);
+    const [manualCode, setManualCode] = useState('');
 
     // No patient selected means Walk-in Customer
 
@@ -47,6 +48,7 @@ const DispensePage = () => {
 
     const html5QrCodeRef = React.useRef(null);
     const scannerRef = React.useRef(null);
+    const lastScanTime = React.useRef(0);
 
     const startScanner = async () => {
         setIsScanning(true);
@@ -54,12 +56,20 @@ const DispensePage = () => {
 
         setTimeout(async () => {
             try {
-                if (!html5QrCodeRef.current) {
-                    html5QrCodeRef.current = new Html5Qrcode("med-reader");
+                if (html5QrCodeRef.current) {
+                    try {
+                        if (html5QrCodeRef.current.isScanning) {
+                            await html5QrCodeRef.current.stop();
+                        }
+                        html5QrCodeRef.current.clear();
+                    } catch (e) {
+                        console.log(e);
+                    }
                 }
+                html5QrCodeRef.current = new Html5Qrcode("med-reader");
 
-                // Config for scanner
-                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+                // Config for scanner - no qrbox to allow scanning full-width barcodes
+                const config = { fps: 10 };
 
                 // Start scanning
                 await html5QrCodeRef.current.start(
@@ -82,17 +92,25 @@ const DispensePage = () => {
     };
 
     const stopScanner = async () => {
-        if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
+        if (html5QrCodeRef.current) {
             try {
-                await html5QrCodeRef.current.stop();
+                if (html5QrCodeRef.current.isScanning) {
+                    await html5QrCodeRef.current.stop();
+                }
+                html5QrCodeRef.current.clear();
             } catch (e) {
                 console.log(e);
             }
+            html5QrCodeRef.current = null;
         }
         setIsScanning(false);
     };
 
     const handleRealScan = (scannedText) => {
+        const now = Date.now();
+        if (now - lastScanTime.current < 2000) return; // 2 seconds cooldown
+        lastScanTime.current = now;
+
         // MOCK LOGIC: "Mock everything"
         // If the scanned text matches a medicine ID, use it.
         // If not, pick a random medicine from inventory to simulate a successful scan of a box.
@@ -100,19 +118,33 @@ const DispensePage = () => {
         let med = inventory.find(m => m.id === scannedText || m.name === scannedText);
 
         if (!med) {
-            // MOCK: Pick a random med to make the demo work smoothly with any QR code
-            const randomIndex = Math.floor(Math.random() * inventory.length);
-            med = inventory[randomIndex];
+            if (inventory.length > 0) {
+                // Pick a random med to make the demo work smoothly with any QR code
+                const randomIndex = Math.floor(Math.random() * inventory.length);
+                med = inventory[randomIndex];
+            } else {
+                // If inventory is completely empty, create a mock item using the scanned text
+                med = {
+                    id: `MOCK-${Date.now()}`,
+                    name: scannedText || 'Unknown Medicine',
+                    price: Math.floor(Math.random() * 500) + 50,
+                    stock: 100
+                };
+            }
         }
 
         if (med) {
             addToBill(med, 1);
-            setScanMessage(`Scanned: ${med.name}`);
+            toast.success(`Scanned: ${med.name}`);
+            stopScanner();
+        }
+    };
 
-            // Optional: Stop scanner after one scan or keep it open?
-            // Usually for POS, keep open. But for mobile, maybe pause?
-            // Let's keep it open but show feedback.
-            setTimeout(() => setScanMessage(''), 2000);
+    const handleManualEntry = (e) => {
+        e.preventDefault();
+        if (manualCode.trim()) {
+            handleRealScan(manualCode.trim());
+            setManualCode('');
         }
     };
 
@@ -174,7 +206,7 @@ const DispensePage = () => {
             // Match by ID AND PrescriptionID
             if (item.id === itemId && item.prescriptionId === prescriptionId) {
                 // Find Constraints
-                const med = inventory.find(m => m.id === itemId);
+                const med = item;
 
                 // 1. Stock Constraint
                 if (newQty > med.stock) {
@@ -208,14 +240,24 @@ const DispensePage = () => {
     const handleCheckout = async () => {
         setIsScanning(true); // Reuse as loading state
         try {
-            // MOCKED CHECKOUT - No API Calls
-            // Just assume everything is verified
-            setTimeout(() => {
-                setShowConfirm(true);
+            if (billItems.length === 0) {
                 setIsScanning(false);
-            }, 1500);
+                return;
+            }
+
+            const payload = billItems.map(item => ({
+                id: item.id,
+                quantity: item.quantity,
+                prescriptionId: item.prescriptionId || null
+            }));
+
+            await api.prescriptions.dispense(payload);
+
+            toast.success("Checkout Successful!");
+            setShowConfirm(true);
+            setIsScanning(false);
         } catch (error) {
-            toast.error("Checkout Failed: " + error.message);
+            toast.error("Checkout Failed: " + (error.message || "Unknown error"));
             setIsScanning(false);
         }
     };
@@ -374,6 +416,17 @@ const DispensePage = () => {
                             </motion.div>
                         )}
                     </div>
+
+                    {/* Manual Entry Fallback */}
+                    <form onSubmit={handleManualEntry} className="flex gap-2">
+                        <Input 
+                            placeholder="Camera failing? Enter barcode manually..." 
+                            value={manualCode}
+                            onChange={(e) => setManualCode(e.target.value)}
+                            className="bg-white"
+                        />
+                        <Button type="submit" variant="secondary" className="bg-slate-200 hover:bg-slate-300 text-slate-800">Add</Button>
+                    </form>
 
                     {/* Current Dispense List (Cart) */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

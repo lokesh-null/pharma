@@ -1,0 +1,1010 @@
+================================================================================
+                    PHARMALYNC — COMPLETE PROJECT DOCUMENTATION
+                    Status as of: June 4, 2026
+================================================================================
+
+
+1. WHAT IS PHARMALYNC?
+================================================================================
+
+PharmaLync is a comprehensive, secure healthcare platform that connects
+Patients, Doctors, Pharmacists, and Administrators through a unified web
+application. It integrates a backend API with a modern React frontend and
+Ethereum blockchain smart contracts.
+
+The platform is designed to:
+- Securely manage patient medical data using multi-layer encryption
+- Provide consent-based access to sensitive data (e.g., Aadhaar numbers)
+- Maintain immutable audit trails on both a local database and the blockchain
+- Prevent double-dispensing of medicines via blockchain verification
+- Support role-based dashboards (Patient, Doctor, Pharmacist, Admin)
+- Use Email OTP-based passwordless authentication
+
+It is an Indian healthcare context application, built with compliance in mind
+for UIDAI (Aadhaar regulations), DPDP Act, and HIPAA-like standards.
+
+
+2. COMPLETE TECH STACK
+================================================================================
+
+--- FRONTEND ---
+- Framework:           React 18.2 (Single Page Application)
+- Build Tool:          Vite (with @vitejs/plugin-react)
+- Language:            JavaScript (JSX)
+- Styling:             TailwindCSS v4 (via @tailwindcss/vite plugin)
+- CSS Utilities:       clsx, tailwind-merge, class-variance-authority
+- Routing:             React Router DOM v7.13
+- State Management:    Zustand v5.0.10 (with persist middleware)
+- Animations:          Framer Motion
+- Icons:               Lucide React
+- UI Primitives:       Radix UI (@radix-ui/react-collapsible)
+- QR Code Generation:  react-qr-code
+- QR Code Scanning:    html5-qrcode
+- Fonts:               Google Fonts — Plus Jakarta Sans, Inter
+- Path Aliases:        @ -> ./src (via Vite resolve.alias)
+
+--- BACKEND ---
+- Runtime:             Node.js
+- Framework:           Express.js v4.18
+- Language:            TypeScript
+- Database:            SQLite (via Prisma, dev.db file) — designed for PostgreSQL in production
+- ORM:                 Prisma v5.22 with Prisma Client
+- Authentication:      jsonwebtoken (JWT), bcrypt
+- Encryption:          Node.js built-in crypto module (AES-256-GCM, HMAC-SHA256, SHA-256, HKDF, PBKDF2)
+- Validation:          Joi
+- Security Headers:    Helmet
+- CORS:                cors package
+- Rate Limiting:       express-rate-limit
+- Email:               Nodemailer (SMTP, with dev fallback to console)
+- Logging:             Winston (console + file transports)
+- Blockchain:          ethers.js v6.9
+- Smart Contracts:     OpenZeppelin Contracts v5.4
+
+--- BLOCKCHAIN / SMART CONTRACTS ---
+- Network:             Ethereum Sepolia Testnet
+- Language:            Solidity ^0.8.20
+- Development:         Hardhat v3.7 (with @nomicfoundation/hardhat-toolbox)
+- Libraries:           OpenZeppelin (AccessControl, Ownable, ERC20, ERC20Burnable, ERC20Permit)
+- Contracts:           3 contracts (PharmaLyncCore, PharmaLyncAudit, PharmaLyncToken)
+
+--- TESTING ---
+- Frontend Unit Tests: Vitest v4.1.8 + @testing-library/react + @testing-library/jest-dom
+- Frontend E2E Tests:  Playwright v1.60
+- Backend Unit Tests:  Jest v29.7 + ts-jest
+- Test Environment:    happy-dom (for Vitest)
+
+--- DEVOPS ---
+- Containerization:    Docker (multi-stage builds)
+- Orchestration:       Docker Compose
+- Web Server:          Nginx (for serving frontend in production)
+- CI/CD:               GitHub Actions (ci.yml workflow)
+- Node Version:        18.x (specified in Dockerfiles and CI)
+
+
+3. COMPLETE PROJECT STRUCTURE (EVERY FILE)
+================================================================================
+
+pharma/
+├── .env                              # Frontend env vars (VITE_API_URL)
+├── .env.example                      # Frontend env example
+├── .gitignore                        # Git ignore rules
+├── .github/
+│   └── workflows/
+│       └── ci.yml                    # GitHub Actions CI pipeline
+├── Dockerfile                        # Frontend Docker (multi-stage: build + nginx)
+├── docker-compose.yml                # Orchestrates frontend + backend containers
+├── index.html                        # Vite entry HTML (fonts: Inter, Plus Jakarta Sans)
+├── nginx.conf                        # Nginx config for SPA routing (try_files)
+├── package.json                      # Frontend deps & scripts
+├── package-lock.json                 # Lockfile
+├── tailwind.config.js                # Tailwind config (darkMode: 'class')
+├── vite.config.js                    # Vite config (aliases, test config, chunking)
+├── playwright.config.ts              # Playwright E2E test config
+├── public/
+│   └── assets/
+│       ├── logo-dark.png             # Dark mode logo (389KB)
+│       └── logo-light.png            # Light mode logo (252KB)
+├── tests/
+│   ├── dispense.spec.js              # Playwright E2E test for dispensing
+│   └── example.spec.ts               # Playwright example spec
+├── src/
+│   ├── main.jsx                      # React root mount point
+│   ├── App.jsx                       # Root component with all routing
+│   ├── index.css                     # Global styles + Tailwind v4 theme
+│   ├── setupTests.js                 # Vitest setup (imports jest-dom)
+│   ├── components/
+│   │   ├── ErrorBoundary.jsx         # React Error Boundary with retry UI
+│   │   ├── ProtectedRoute.jsx        # Auth guard with role-based redirect
+│   │   └── ui/
+│   │       ├── EmptyState.jsx        # Empty state placeholder component
+│   │       ├── Logo.jsx              # PharmaLync logo component (dark/light)
+│   │       ├── MotionButton.jsx      # Framer Motion animated button
+│   │       ├── MotionCard.jsx        # Framer Motion animated card
+│   │       ├── PageTransition.jsx    # Page transition animations
+│   │       ├── Skeleton.jsx          # Loading skeleton + PageLoader
+│   │       ├── Toaster.jsx           # Toast notification system (UI)
+│   │       ├── badge.jsx             # Badge component (CVA variants)
+│   │       ├── button.jsx            # Button component (CVA variants)
+│   │       ├── card.jsx              # Card, CardHeader, CardContent, CardFooter
+│   │       ├── collapsible.jsx       # Radix UI Collapsible wrapper
+│   │       ├── input.jsx             # Input component
+│   │       ├── table.jsx             # Table, TableHeader, TableBody, TableRow, TableCell
+│   │       └── textarea.jsx          # Textarea component
+│   ├── context/
+│   │   └── ThemeContext.jsx          # Dark/Light theme toggle (localStorage persist)
+│   ├── layouts/
+│   │   ├── AuthLayout.jsx            # Auth pages layout (login, signup, etc.)
+│   │   ├── PatientLayout.jsx         # Patient dashboard shell with sidebar/nav
+│   │   ├── DoctorLayout.jsx          # Doctor dashboard shell with sidebar/nav
+│   │   ├── PharmacistLayout.jsx      # Pharmacist dashboard shell with sidebar/nav
+│   │   └── AdminLayout.jsx           # Admin dashboard shell with sidebar/nav
+│   ├── lib/
+│   │   ├── api.js                    # Full API client (JWT interceptor, auto-refresh, all endpoints)
+│   │   ├── authStore.js              # Zustand auth store (user, isAuthenticated, login/logout)
+│   │   ├── maskUtils.js              # Aadhaar masking (XXXX XXXX 1234), phone masking
+│   │   ├── toast.js                  # Zustand toast store (success/error/warning/info)
+│   │   └── utils.js                  # cn() utility (clsx + twMerge)
+│   ├── modules/
+│   │   ├── patient/
+│   │   │   ├── index.jsx                     # Patient Dashboard main page
+│   │   │   ├── ProfilePage.jsx               # Patient profile page
+│   │   │   ├── ProfileHeader.jsx             # Profile header with avatar and info
+│   │   │   ├── MedicineLog.jsx               # Medicine tracking log
+│   │   │   ├── MedicalRecords.jsx            # Medical records viewer
+│   │   │   ├── DigitalIdentityCard.jsx       # Digital ID card with QR code
+│   │   │   ├── MedVerifierFAB.jsx            # Medicine Verifier Floating Action Button
+│   │   │   ├── components/
+│   │   │   │   ├── MedicalHistoryModal.jsx   # Modal for viewing medical history
+│   │   │   │   └── RemindersList.jsx         # Medication reminders list
+│   │   │   ├── pages/
+│   │   │   │   └── PrescriptionsPage.jsx     # Patient's prescriptions view
+│   │   │   └── __tests__/
+│   │   │       └── DigitalIdentityCard.test.jsx  # Unit test for Digital ID Card
+│   │   ├── doctor/
+│   │   │   ├── index.jsx                     # Doctor module entry
+│   │   │   ├── ClinicalTimeline.jsx          # Clinical visit timeline
+│   │   │   ├── PatientScannerWidget.jsx      # QR scanner widget for doctor
+│   │   │   ├── SmartRxForm.jsx               # Smart prescription form
+│   │   │   └── pages/
+│   │   │       ├── ScanQRPage.jsx            # QR code scanner page
+│   │   │       ├── PatientDetailsPage.jsx    # View patient details after scan
+│   │   │       ├── DiagnosisPage.jsx         # Enter diagnosis for a patient
+│   │   │       ├── DraftPrescriptionPage.jsx # Create & submit prescriptions
+│   │   │       ├── ActivityLogPage.jsx       # Doctor's activity history
+│   │   │       ├── DoctorProfilePage.jsx     # Doctor profile management
+│   │   │       └── DoctorRegistration.jsx    # Doctor self-registration (public)
+│   │   ├── pharmacist/
+│   │   │   ├── index.jsx                     # Pharmacist module entry/dashboard
+│   │   │   ├── store.js                      # Zustand pharmacy store (inventory, dispensing, transactions)
+│   │   │   └── pages/
+│   │   │       ├── ScanQR.jsx                # Scan prescription QR codes
+│   │   │       ├── DispensePage.jsx           # Dispense medicines (blockchain-integrated)
+│   │   │       ├── Stock.jsx                  # Inventory/stock management
+│   │   │       ├── History.jsx                # Dispensing history
+│   │   │       └── Profile.jsx                # Pharmacist profile
+│   │   └── admin/
+│   │       └── pages/
+│   │           ├── DashboardPage.jsx          # Admin overview dashboard
+│   │           ├── UserManagementPage.jsx     # User CRUD (all roles)
+│   │           └── AuditLogPage.jsx           # System audit log viewer
+│   └── pages/
+│       └── auth/
+│           ├── LoginPage.jsx                  # Email + OTP login
+│           ├── SignupPage.jsx                 # Multi-step registration form
+│           ├── CreatePasswordPage.jsx         # Create password after OTP verify
+│           ├── ForgotPasswordPage.jsx         # Forgot password (send OTP)
+│           └── ResetPasswordPage.jsx          # Reset password with OTP
+│
+├── backend/
+│   ├── .env                          # Backend environment variables
+│   ├── .env.example                  # Documented env template (57 lines)
+│   ├── .gitignore                    # Backend git ignore
+│   ├── Dockerfile                    # Backend Docker (node:18-alpine)
+│   ├── README.md                     # Backend documentation
+│   ├── package.json                  # Backend deps & scripts
+│   ├── package-lock.json             # Lockfile
+│   ├── tsconfig.json                 # TypeScript configuration
+│   ├── hardhat.config.cjs            # Hardhat config for contract compilation
+│   ├── jest.config.cjs               # Jest test configuration
+│   ├── nodemon.json                  # Nodemon config for dev hot-reload
+│   ├── fix.cjs                       # Utility fix script
+│   ├── prisma/
+│   │   ├── schema.prisma             # Database schema (12 models, 224 lines)
+│   │   ├── seed.ts                   # Database seeder (users, patients, medicines, prescriptions)
+│   │   ├── dev.db                    # SQLite development database file
+│   │   └── migrations/
+│   │       ├── migration_lock.toml
+│   │       └── 20260603053646_email_otp_auth/
+│   │           └── migration.sql
+│   ├── contracts/
+│   │   ├── PharmaLyncAudit.sol       # Audit smart contract (same as smart-contracts/)
+│   │   ├── PharmaLyncCore.sol        # Core smart contract (same as smart-contracts/)
+│   │   └── PharmaLyncToken.sol       # Token smart contract (same as smart-contracts/)
+│   ├── scripts/
+│   │   ├── deploy-contracts.ts       # Script to deploy Core + Audit contracts
+│   │   ├── deploy-token.ts           # Script to deploy PLT ERC20 token
+│   │   └── generate-keys.ts          # Script to generate encryption keys
+│   ├── src/
+│   │   ├── index.ts                  # Express server entry point (178 lines)
+│   │   ├── middleware/
+│   │   │   ├── security.middleware.ts  # Helmet, CORS, rate limiting, Joi validation, input sanitization, error handler
+│   │   │   ├── auth.middleware.ts      # JWT authentication, RBAC (requireRole), optional auth
+│   │   │   ├── audit.middleware.ts     # Auto audit logging middleware (after response, before action)
+│   │   │   └── consent.middleware.ts   # Consent token verification, patient consent check
+│   │   ├── routes/
+│   │   │   ├── auth.routes.ts          # Auth endpoints (register, login via OTP, send-otp, verify-otp, create-password, reset-password, resend-otp, refresh, logout)
+│   │   │   ├── patient.routes.ts       # Patient CRUD + Aadhaar access
+│   │   │   ├── prescription.routes.ts  # Prescription CRUD, QR verify, dispensing
+│   │   │   ├── medicine.routes.ts      # Medicine CRUD, QR generation, verification
+│   │   │   ├── consultation.routes.ts  # Consultation CRUD (doctor-patient)
+│   │   │   ├── consent.routes.ts       # Consent grant/revoke/list
+│   │   │   ├── audit.routes.ts         # Audit log query, get by ID, verify integrity
+│   │   │   ├── admin.routes.ts         # Admin stats, user listing with filters
+│   │   │   └── user.routes.ts          # User search by identifier
+│   │   ├── services/
+│   │   │   ├── auth.service.ts         # JWT token generation/verification, bcrypt password hashing
+│   │   │   ├── otp.service.ts          # OTP generation (crypto.randomInt), SHA-256 hashing, verification, rate limiting, cooldowns
+│   │   │   ├── email.service.ts        # Nodemailer SMTP email sending with HTML templates (OTP emails)
+│   │   │   ├── aadhaar.service.ts      # 3-layer Aadhaar security (tokenize HMAC -> encrypt AES-GCM -> hash SHA-256)
+│   │   │   ├── encryption.service.ts   # PII encryption (AES-256-GCM), per-user key derivation, bulk encrypt/decrypt
+│   │   │   ├── kms.service.ts          # Key Management Service (master key, HKDF user key derivation, env validation)
+│   │   │   ├── consent.service.ts      # Consent JWT tokens (time-bound, scope-limited), grant/revoke/verify/check
+│   │   │   ├── audit.service.ts        # Two-tier audit (DB + blockchain), critical action detection, integrity verification
+│   │   │   ├── blockchain.service.ts   # Ethereum interaction (register/dispense medicine, log/verify audit)
+│   │   │   └── qr-security.service.ts  # Secure QR token generation (AES-GCM + HMAC-SHA512 signatures)
+│   │   └── utils/
+│   │       └── logger.ts               # Winston logger (console + file transports: error.log, combined.log)
+│   ├── test/
+│   │   └── PharmaLyncCore.ts          # Smart contract test file
+│   └── __tests__/
+│       └── auth.service.test.ts       # Auth service unit tests
+│   └── logs/                          # Runtime log files directory
+│
+├── smart-contracts/
+│   ├── package.json                   # Hardhat project package
+│   ├── package-lock.json              # Lockfile
+│   ├── hardhat.config.js              # Hardhat configuration
+│   ├── contracts/
+│   │   ├── PharmaLyncAudit.sol        # Audit logging contract (151 lines)
+│   │   ├── PharmaLyncCore.sol         # Medicine registry + dispensing (143 lines)
+│   │   └── PharmaLyncToken.sol        # ERC20 token "PLT" (33 lines)
+│   ├── test/
+│   │   └── PharmaLyncCore.js          # Contract test
+│   ├── artifacts/                     # Compiled contract artifacts
+│   └── cache/                         # Hardhat cache
+
+
+4. DATABASE SCHEMA (PRISMA — 12 MODELS)
+================================================================================
+
+Currently using SQLite for development (file:./dev.db).
+Designed for PostgreSQL in production.
+
+--- Model: User ---
+Fields: id (UUID), email (unique), fullName, phone (unique, optional),
+        dateOfBirth, gender, role (PATIENT/DOCTOR/PHARMACIST/ADMIN),
+        profilePicture, passwordHash, passwordCreated (bool), lastPasswordChange,
+        failedLoginAttempts, lockedUntil, isVerified, isActive, lastLogin,
+        createdAt, updatedAt
+Relations: otps[], sessions[], auditLogs[], prescriptionsReceived[],
+           prescriptionsIssued[], consentsGranted[], consultationsAsDoctor[],
+           consultationsAsPatient[], notifications[], medicalHistoryAsPatient[],
+           medicalHistoryAsDoctor[]
+
+--- Model: Otp ---
+Fields: id (UUID), userId, otpCode (SHA-256 hashed), expiresAt, isUsed (bool),
+        attemptCount (int), createdAt
+Relation: -> User (cascade delete)
+
+--- Model: Session ---
+Fields: id (UUID), userId, sessionToken (unique), expiresAt, deviceInfo, ipAddress,
+        createdAt
+Relation: -> User (cascade delete)
+
+--- Model: Patient ---
+Fields: id (UUID), aadhaarEncrypted (Bytes, AES-256-GCM), aadhaarHash (unique, SHA-256),
+        nameEncrypted (Bytes), dobEncrypted (Bytes), phoneEncrypted (Bytes),
+        phoneHash (unique), addressEncrypted (Bytes), consentGiven (bool),
+        createdAt, updatedAt
+Relations: consents[]
+
+--- Model: Consent ---
+Fields: id (UUID), patientId, grantedTo (userId), scopes (JSON string),
+        expiresAt, revoked (bool), createdAt, updatedAt
+Relations: -> Patient (cascade delete), -> User
+
+--- Model: AuditLog ---
+Fields: id (UUID), userId, action, resourceType, resourceId, metadata (JSON string),
+        timestamp, blockchainTxHash (optional)
+Relation: -> User
+
+--- Model: Medicine ---
+Fields: id (UUID), name, manufacturer, batchNumber (unique), blockchainId (unique),
+        verified (bool), stock (int), price (float), category, createdAt, updatedAt
+Relations: prescriptionMedicines[]
+
+--- Model: Prescription ---
+Fields: id (UUID), patientId, issuedBy (doctor userId), diagnosis, notes,
+        qrToken (secure QR), dispensed (bool), dispensedAt, dispensedBy (pharmacist userId),
+        createdAt, updatedAt
+Relations: -> User (patient, cascade), -> User (issuer), medicines[] (PrescriptionMedicine)
+
+--- Model: PrescriptionMedicine ---
+Fields: id (UUID), prescriptionId, medicineId, quantity (int), dispensed (int), dosage
+Relations: -> Prescription (cascade), -> Medicine
+Unique constraint: [prescriptionId, medicineId]
+
+--- Model: Consultation ---
+Fields: id (UUID), doctorId, patientId, symptoms (JSON string), diagnosis, notes,
+        followUpDate, status (Active/Completed), priority (Normal), createdAt, updatedAt
+Relations: -> User (doctor), -> User (patient)
+
+--- Model: Notification ---
+Fields: id (UUID), userId, message, type (INFO), read (bool), createdAt
+Relation: -> User (cascade delete)
+
+--- Model: MedicalHistory ---
+Fields: id (UUID), patientId, doctorId, diagnosis, notes, date
+Relations: -> User (patient), -> User (doctor)
+
+
+5. AUTHENTICATION SYSTEM (Email OTP-Based)
+================================================================================
+
+The authentication flow is OTP-based (passwordless primary, with optional password).
+
+SIGNUP FLOW:
+1. User submits email, fullName, phone, dateOfBirth, gender, role via POST /api/auth/register
+2. Backend creates User record (isVerified=false, passwordCreated=false)
+3. Backend generates 6-digit OTP (crypto.randomInt), hashes with SHA-256, stores in Otp table
+4. OTP is sent via email (Nodemailer SMTP or logged to console in dev)
+5. User enters OTP on frontend -> POST /api/auth/verify-otp
+6. Backend verifies OTP using constant-time comparison (crypto.timingSafeEqual)
+7. On success: generates JWT access token (15min) + refresh token (7 days)
+8. User is redirected to /create-password page
+9. User creates password -> POST /api/auth/create-password
+10. Password is hashed with bcrypt (10 rounds) and stored
+
+LOGIN FLOW:
+1. User enters email + password -> POST /api/auth/login
+2. Backend verifies password with bcrypt.compare
+3. On success: generates JWT token pair (access + refresh)
+4. Frontend stores tokens in localStorage, user in Zustand (persisted)
+
+TOKEN REFRESH:
+1. When access token expires (401 response)
+2. API client automatically calls POST /api/auth/refresh with refresh token
+3. New access token is returned and stored
+4. Original request is retried transparently
+
+OTP SECURITY:
+- 6-digit cryptographically secure OTP (crypto.randomInt)
+- OTPs are SHA-256 hashed before storage (raw OTP never persisted)
+- 5-minute expiration
+- Max 5 verification attempts per OTP
+- Max 5 OTP generations per user per 15-minute window
+- 30-second cooldown between resend requests
+- Used OTPs are immediately invalidated
+- Constant-time comparison to prevent timing attacks
+
+JWT TOKEN DETAILS:
+- Access Token: 15 min expiry, HS256 algorithm, issuer "pharmalync", audience "pharmalync-api"
+- Refresh Token: 7 day expiry, HS256 algorithm, same issuer/audience
+- Consent Token: 60 min expiry, HS256 algorithm, issuer "pharmalync", audience "pharmalync-consent"
+- Each type uses a separate secret (JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, CONSENT_TOKEN_SECRET)
+
+
+6. SECURITY & ENCRYPTION DETAILS
+================================================================================
+
+--- THREE-LAYER AADHAAR PROTECTION ---
+Layer 1 (Tokenization): HMAC-SHA256 with master key converts 12-digit Aadhaar into a
+         deterministic 32-char hex token. This is a one-way operation.
+Layer 2 (Encryption):   AES-256-GCM encrypts the token with random 16-byte IV.
+         Storage format: [IV(16 bytes) | AuthTag(16 bytes) | Ciphertext]
+Layer 3 (Hashing):      SHA-256 hash of the token (not raw Aadhaar) for database lookups.
+         Verification uses crypto.timingSafeEqual for constant-time comparison.
+
+--- PII ENCRYPTION (names, DOB, phone, address) ---
+- Algorithm: AES-256-GCM
+- Key derivation: HKDF-SHA256 per user (derived from master key + userId salt)
+- Random 16-byte IV per encryption
+- Auth tag verification on decryption
+- Storage format: [IV(16) | AuthTag(16) | Ciphertext]
+- Bulk encrypt/decrypt support for multiple fields
+
+--- KEY MANAGEMENT SERVICE (KMS) ---
+- Master key: 256-bit (64 hex chars from ENCRYPTION_KEY env var)
+- Validates key format on startup (must be 64 hex characters)
+- Per-user key derivation using HKDF-SHA256 (Extract + Expand)
+- Key rotation placeholder for AWS KMS / Azure Key Vault integration
+- Required env vars validated on startup: ENCRYPTION_KEY, JWT_ACCESS_SECRET,
+  JWT_REFRESH_SECRET, CONSENT_TOKEN_SECRET
+
+--- QR CODE SECURITY ---
+- Authenticated Encryption: AES-256-GCM with derived key per resource type
+- Digital Signatures: HMAC-SHA512 over (IV + Tag + Ciphertext)
+- Anti-replay: Random 16-byte nonce + timestamp embedded in payload
+- Key derivation: HMAC-SHA256 from master key with context strings
+  (QR_TOKEN_{type} for encryption, QR_SIGN_{type} for signing)
+- Format: base64url(JSON{ iv, tag, encrypted, signature })
+- Verification: Signature checked BEFORE decryption (sign-then-encrypt model)
+- Constant-time signature comparison to prevent timing attacks
+- Public lookup hashes: HMAC-SHA256 for blockchain ID obfuscation
+
+--- PASSWORD SECURITY ---
+- Hashing: bcrypt with 10 salt rounds
+- Password comparison: bcrypt.compare (constant-time)
+- Seed script uses PBKDF2-SHA512 with 10,000 iterations, 16-byte salt, 64-byte output
+
+--- INPUT SANITIZATION ---
+- Strips <script> tags and all HTML tags from all input
+- Applied recursively to request body and query params
+- Runs as global Express middleware on every request
+
+--- HTTP SECURITY HEADERS (Helmet) ---
+- Content-Security-Policy: self-only scripts/styles, data: and https: for images
+- HSTS: max-age 1 year, includeSubDomains, preload
+- X-Frame-Options: DENY
+- X-Content-Type-Options: nosniff
+- XSS Protection filter enabled
+
+--- CORS ---
+- Configurable allowed origins (default: localhost:5173, localhost:3000)
+- Credentials: true
+- Methods: GET, POST, PUT, DELETE, PATCH
+- Custom headers allowed: Content-Type, Authorization, X-Consent-Token
+
+--- RATE LIMITING ---
+- Global: 100 requests per 15-minute window per IP
+- Auth endpoints: 10 requests per 15-minute window per IP (stricter)
+- Returns 429 with JSON error message
+
+
+7. CONSENT MANAGEMENT SYSTEM
+================================================================================
+
+Consent is managed through time-bound, scope-limited JWT tokens.
+
+CONSENT SCOPES:
+- VIEW_MEDICAL_RECORDS: Permission to view patient medical records
+- VIEW_AADHAAR: Permission to view decrypted Aadhaar number
+- UPDATE_RECORDS: Permission to update patient records
+
+FLOW:
+1. Patient grants consent -> POST /api/consent/grant
+2. Backend creates Consent record in DB + generates JWT consent token
+3. Token contains: consentId, patientId, grantedTo (userId), scopes, expiresAt
+4. Doctor/Pharmacist includes consent token in X-Consent-Token header
+5. Middleware verifies: JWT signature, expiry, scope match, revocation status
+6. Patient can revoke consent anytime -> POST /api/consent/revoke
+
+TWO VERIFICATION MODES:
+1. Token-based: Via X-Consent-Token header (for explicit consent flows)
+2. Database-based: Direct DB check for active non-revoked consent (for implicit flows)
+
+
+8. AUDIT LOGGING SYSTEM (TWO-TIER)
+================================================================================
+
+TIER 1 — LOCAL DATABASE:
+- All actions logged to AuditLog table
+- Fields: userId, action, resourceType, resourceId, metadata (method, path, IP, userAgent)
+- Indexed queries with filtering by user, action, resource, date range
+- Automatic logging via Express middleware (logs on successful 2xx responses)
+- Two modes: "after response" (auditLog) and "before action" (auditLogBefore)
+
+TIER 2 — BLOCKCHAIN:
+- Critical actions automatically logged to Ethereum (Sepolia) via PharmaLyncAudit contract
+- Critical actions: VIEW_AADHAAR, CREATE_PATIENT, UPDATE_PATIENT, MEDICINE_DISPENSE, PRESCRIPTION_CREATE
+- Only SHA-256 hash of audit data is stored on-chain (NO PII ever goes to blockchain)
+- Transaction hash stored in local AuditLog.blockchainTxHash field
+- Blockchain logging is async and non-blocking (failures don't break operations)
+
+INTEGRITY VERIFICATION:
+- Admin can verify any audit log against blockchain via GET /api/audit/verify/:id
+- System recalculates local hash and compares with on-chain hash
+- Returns: valid (bool), localHash, blockchainHash, error message if mismatch
+
+
+9. SMART CONTRACTS (SOLIDITY)
+================================================================================
+
+--- PharmaLyncCore.sol (143 lines) ---
+Inherits: AccessControl (OpenZeppelin)
+Roles: MANUFACTURER_ROLE, PHARMACY_ROLE, ADMIN_ROLE
+Purpose: Medicine registry with double-dispensing prevention
+
+Functions:
+- registerMedicine(name, manufacturer, batchNumber) -> medicineId
+  Restricted to MANUFACTURER_ROLE. Validates non-empty fields and unique batch numbers.
+- dispenseMedicine(medicineId)
+  Restricted to PHARMACY_ROLE. Prevents double-dispensing (requires !dispensed).
+  Records dispensedBy address and timestamp.
+- isMedicineDispensed(medicineId) -> bool
+- getMedicine(medicineId) -> Medicine struct
+- getTotalMedicines() -> uint256
+
+Events: MedicineRegistered, MedicineDispensed
+
+Medicine struct: id, name, manufacturer, batchNumber, registeredAt, dispensed, dispensedBy, dispensedAt
+
+--- PharmaLyncAudit.sol (151 lines) ---
+Inherits: Ownable (OpenZeppelin)
+Purpose: Permissioned audit ledger (hash-only, no PII)
+
+Functions:
+- authorizeLogger(address) — Owner only. Grants audit logging permission.
+- revokeLogger(address) — Owner only. Revokes audit logging permission.
+- logAudit(auditId, action, dataHash, timestamp) — Authorized loggers only.
+  Validates: non-empty auditId, non-empty action, 64-char hash, unique auditId.
+- verifyAudit(auditId) -> (action, dataHash, timestamp, actor)
+- auditExists(auditId) -> bool
+- getTotalAudits() -> uint256
+
+Events: AuditLogged, LoggerAuthorized, LoggerRevoked
+
+AuditRecord struct: auditId, action, dataHash, timestamp, actor, exists
+
+--- PharmaLyncToken.sol (33 lines) ---
+Inherits: ERC20, ERC20Burnable, Ownable, ERC20Permit (OpenZeppelin)
+Token name: "PharmaLync Token", Symbol: "PLT"
+Purpose: ERC20 utility token for the PharmaLync ecosystem
+
+Features:
+- Initial supply: 10,000,000 PLT minted to deployer
+- Owner-only mint function for additional supply
+- Burnable (anyone can burn their own tokens)
+- ERC20Permit for gasless approvals (EIP-2612)
+
+
+10. COMPLETE API ENDPOINTS
+================================================================================
+
+Base URL: http://localhost:3000/api
+
+--- HEALTH CHECK ---
+GET /health -> { status, timestamp, uptime }
+
+--- AUTH (auth.routes.ts — 17KB, largest route file) ---
+POST /api/auth/register         — Register new user (email, fullName, phone, DOB, gender, role)
+POST /api/auth/login            — Login with email + password
+POST /api/auth/send-otp         — Send OTP to email
+POST /api/auth/verify-otp       — Verify OTP and get JWT tokens
+POST /api/auth/resend-otp       — Resend OTP (30s cooldown)
+POST /api/auth/create-password  — Create password after OTP verification
+POST /api/auth/reset-password   — Reset password with OTP
+POST /api/auth/refresh          — Refresh access token using refresh token
+POST /api/auth/logout           — Logout (invalidate session)
+
+--- PATIENTS (patient.routes.ts) ---
+POST   /api/patients            — Create patient (ADMIN only)
+GET    /api/patients             — List patients (ADMIN, NURSE)
+GET    /api/patients/:id         — Get patient by ID (ADMIN, NURSE)
+GET    /api/patients/:id/aadhaar — View decrypted Aadhaar (requires consent token in X-Consent-Token)
+PUT    /api/patients/:id         — Update patient (ADMIN)
+DELETE /api/patients/:id         — Delete patient (ADMIN)
+
+--- PRESCRIPTIONS (prescription.routes.ts — 15KB) ---
+GET    /api/prescriptions/patient/:patientId — List prescriptions for a patient
+GET    /api/prescriptions/my-prescriptions   — Get logged-in patient's own prescriptions
+POST   /api/prescriptions                    — Create prescription (DOCTOR, ADMIN)
+POST   /api/prescriptions/verify-qr          — Verify a prescription QR token
+POST   /api/prescriptions/dispense           — Dispense prescribed medicines (PHARMACIST)
+
+--- MEDICINES (medicine.routes.ts — 9KB) ---
+GET    /api/medicines            — List all medicines
+GET    /api/medicines/:id        — Get medicine by ID
+POST   /api/medicines            — Register medicine (PHARMACY, ADMIN)
+POST   /api/medicines/:id/dispense — Dispense medicine (PHARMACY)
+GET    /api/medicines/:id/qr     — Generate secure QR for medicine
+POST   /api/medicines/verify-qr  — Verify a medicine QR token
+
+--- CONSULTATIONS (consultation.routes.ts — 6KB) ---
+POST   /api/consultations                    — Create consultation (DOCTOR)
+GET    /api/consultations/patient/:patientId  — Get patient's consultation history
+GET    /api/consultations/doctor/:doctorId    — Get doctor's consultation history
+
+--- CONSENT (consent.routes.ts) ---
+POST   /api/consent/grant        — Grant consent (generates JWT consent token)
+POST   /api/consent/revoke       — Revoke consent
+GET    /api/consent/:patientId   — Get active consents for patient
+
+--- AUDIT (audit.routes.ts) ---
+GET    /api/audit/logs           — Query audit logs with filters (ADMIN)
+GET    /api/audit/logs/:id       — Get specific audit log (ADMIN)
+GET    /api/audit/verify/:id     — Verify audit integrity against blockchain (ADMIN)
+
+--- ADMIN (admin.routes.ts) ---
+GET    /api/admin/stats          — Get system-wide statistics (ADMIN)
+GET    /api/admin/users          — List users with filters (ADMIN)
+
+--- USERS (user.routes.ts) ---
+GET    /api/users/search/:identifier — Search user by email or phone
+
+
+11. FRONTEND ROUTING (App.jsx)
+================================================================================
+
+PUBLIC ROUTES (AuthLayout):
+  /login                  -> LoginPage
+  /signup                 -> SignupPage
+  /create-password        -> CreatePasswordPage
+  /forgot-password        -> ForgotPasswordPage
+  /reset-password         -> ResetPasswordPage
+  /                       -> Redirects to /login
+
+PATIENT ROUTES (PatientLayout, requires PATIENT role):
+  /patient/dashboard      -> PatientDashboard (lazy loaded)
+  /patient/medicine-log   -> MedicineLog (lazy loaded)
+  /patient/prescriptions  -> PrescriptionsPage (lazy loaded)
+  /patient/profile        -> PatientProfile (lazy loaded)
+
+DOCTOR ROUTES (DoctorLayout, requires DOCTOR or ADMIN role):
+  /doctor/register        -> DoctorRegistration (public, no layout)
+  /doctor/dashboard       -> Redirects to /doctor/scan
+  /doctor/scan            -> ScanQRPage (lazy loaded)
+  /doctor/patient/:id     -> PatientDetailsPage (lazy loaded)
+  /doctor/diagnose/:id    -> DiagnosisPage (lazy loaded)
+  /doctor/prescription/:id -> DraftPrescriptionPage (lazy loaded)
+  /doctor/activity        -> ActivityLogPage (lazy loaded)
+  /doctor/profile         -> DoctorProfilePage (lazy loaded)
+
+PHARMACIST ROUTES (PharmacistLayout, requires PHARMACIST or ADMIN role):
+  /pharmacist             -> Redirects to /pharmacist/scan
+  /pharmacist/scan        -> ScanQR (lazy loaded)
+  /pharmacist/dispense    -> DispensePage (lazy loaded)
+  /pharmacist/stock       -> Stock (lazy loaded)
+  /pharmacist/history     -> HistoryPage (lazy loaded)
+  /pharmacist/profile     -> Profile (lazy loaded)
+
+ADMIN ROUTES (AdminLayout, requires ADMIN role):
+  /admin                  -> Redirects to /admin/dashboard
+  /admin/dashboard        -> AdminDashboard (lazy loaded)
+  /admin/users            -> UserManagementPage (lazy loaded)
+  /admin/audit            -> AuditLogPage (lazy loaded)
+
+FALLBACK:
+  *                       -> Redirects to /login
+
+
+12. FRONTEND FEATURES BY DASHBOARD
+================================================================================
+
+--- PATIENT DASHBOARD ---
+- Dashboard Overview: Health summary, upcoming appointments, medication adherence
+- Digital Identity Card: QR code-based digital patient identity (DigitalIdentityCard.jsx)
+- Medicine Verifier FAB: Floating action button to verify medicine authenticity via QR scan (MedVerifierFAB.jsx - 16KB, large component)
+- Medicine Log: Track ongoing and past medications with detailed history (MedicineLog.jsx - 19KB)
+- Medical Records: View medical records and history (MedicalRecords.jsx - 12KB)
+- Prescriptions Page: View all prescriptions with details and QR codes (PrescriptionsPage.jsx - 20KB)
+- Profile: View/edit personal details (ProfilePage.jsx + ProfileHeader.jsx - 15KB header)
+- Medical History Modal: Pop-up to view detailed medical history (MedicalHistoryModal.jsx)
+- Reminders List: Medication reminder system (RemindersList.jsx)
+
+--- DOCTOR DASHBOARD ---
+- QR Scanner: Scan patient QR codes to pull up their records (ScanQRPage.jsx - 8KB)
+- Patient Details: Full patient view after scanning (PatientDetailsPage.jsx - 12KB)
+- Diagnosis Entry: Input symptoms and diagnosis (DiagnosisPage.jsx - 4.5KB)
+- Prescription Drafting: Create prescriptions with medicine selection (DraftPrescriptionPage.jsx - 10KB)
+- Clinical Timeline: Visual timeline of clinical visits (ClinicalTimeline.jsx)
+- Smart Rx Form: Intelligent prescription form (SmartRxForm.jsx)
+- Patient Scanner Widget: Reusable QR scanner component (PatientScannerWidget.jsx)
+- Activity Log: View all past doctor interactions (ActivityLogPage.jsx)
+- Profile: Doctor account management (DoctorProfilePage.jsx - 9KB)
+- Registration: Self-registration page for new doctors (DoctorRegistration.jsx)
+
+--- PHARMACIST DASHBOARD ---
+- QR Scanner: Scan prescription QR codes (ScanQR.jsx - 10KB)
+- Dispense Page: Dispense medicines against prescriptions (DispensePage.jsx - 26KB, largest frontend component)
+  Features: strict quantity checks, double-dispensing prevention, OTC vs prescription distinction
+- Stock Management: View and manage medicine inventory (Stock.jsx)
+- Transaction History: All past dispensing records (History.jsx)
+- Profile: Pharmacist account settings (Profile.jsx)
+- Zustand Store (store.js): Manages inventory, currentPatient session, dispensing logic,
+  transaction history. Persisted to localStorage under key 'pharmacy-storage'.
+
+--- ADMIN DASHBOARD ---
+- System Dashboard: High-level metrics overview (DashboardPage.jsx)
+- User Management: CRUD operations for all user roles (UserManagementPage.jsx - 8KB)
+  Features: Filter by role, search, view user details, create/update/deactivate users
+- Audit Log Viewer: View and filter system audit logs (AuditLogPage.jsx)
+  Features: Filter by action, user, date range. Blockchain verification indicators.
+
+
+13. FRONTEND STATE MANAGEMENT (Zustand)
+================================================================================
+
+--- Auth Store (src/lib/authStore.js) ---
+Store name: 'auth-storage' (persisted to localStorage)
+State: { user, isAuthenticated }
+Actions:
+  - setAuth(user, accessToken, refreshToken): Stores tokens in localStorage, sets user
+  - logout(): Calls backend logout, clears localStorage, resets state
+  - updateUser(userData): Merges user data updates
+Persistence: Only user and isAuthenticated are persisted (not tokens)
+
+--- Toast Store (src/lib/toast.js) ---
+State: { toasts[] }
+Actions:
+  - addToast(toast): Adds toast with auto-generated ID, auto-remove after duration (default 3s)
+  - removeToast(id): Removes specific toast
+Helpers: toast.success(), toast.error(), toast.warning(), toast.info()
+
+--- Pharmacy Store (src/modules/pharmacist/store.js) ---
+Store name: 'pharmacy-storage' (persisted to localStorage)
+State: { inventory[], patients[], currentPatient, transactions[] }
+Actions:
+  - fetchInventory(): Fetches from /api/medicines
+  - setPatient(patientData): Sets current patient session
+  - clearSession(): Clears current patient
+  - dispenseItem(medicineId, quantity, prescriptionId): Full dispensing logic with:
+    * Stock validation
+    * Inventory update
+    * Prescription status update (tracks dispensed vs maxQty)
+    * Transaction recording
+    * Strict double-dispensing prevention
+
+
+14. FRONTEND API CLIENT (src/lib/api.js)
+================================================================================
+
+Base URL: VITE_API_URL env var or http://localhost:3000/api
+
+FEATURES:
+- JWT interceptor: Auto-attaches Bearer token from localStorage to every request
+- Token auto-refresh: On 401, automatically attempts token refresh and retries request
+- Error normalization: Extracts error messages from various response formats
+- Network error handling: Catches fetch failures with friendly message
+- Session expiry: Clears auth and redirects to /login on refresh failure
+
+ENDPOINT NAMESPACES:
+  api.auth        — login, register, createPassword, resetPassword, sendOtp, verifyOtp, resendOtp, refresh, logout
+  api.users       — search(identifier)
+  api.consultations — create, getHistory, getDoctorHistory
+  api.admin       — getStats, getUsers(filters)
+  api.audit       — getLogs(filters), getById, verify
+  api.patients    — list, getById, create, update, delete, getAadhaar(id, consentToken)
+  api.prescriptions — list, getMyPrescriptions, create, verifyQr, dispense
+  api.medicines   — list, getById, register, dispense, getQr, verifyQr
+  api.consent     — grant, revoke, getForPatient
+  api.health      — health check
+
+
+15. UI COMPONENT LIBRARY (src/components/ui/)
+================================================================================
+
+All components use Class Variance Authority (CVA) for variant management.
+
+- button.jsx: Variants: default, destructive, outline, secondary, ghost, link.
+  Sizes: default, sm, lg, icon.
+- badge.jsx: Variants: default, secondary, destructive, outline.
+- card.jsx: Exports Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter.
+  All with proper Tailwind styling and dark mode support.
+- input.jsx: Standard input with focus ring and dark mode.
+- textarea.jsx: Multiline input with consistent styling.
+- table.jsx: Exports Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption.
+- collapsible.jsx: Re-exports Radix UI Collapsible components.
+- Skeleton.jsx: Loading skeleton animation + PageLoader (fullscreen centered spinner).
+- Toaster.jsx: Animated toast notification container (framer-motion AnimatePresence).
+  Types: success (green), error (red), warning (amber), info (blue). Auto-dismiss.
+- Logo.jsx: Renders logo-dark.png or logo-light.png based on theme.
+- EmptyState.jsx: Placeholder for empty data states with icon + message.
+- MotionButton.jsx: Button with framer-motion scale animation on tap.
+- MotionCard.jsx: Card with framer-motion fade-in and slide-up animation.
+- PageTransition.jsx: Wraps page content with framer-motion fade transition.
+
+
+16. STYLING & DESIGN SYSTEM (src/index.css)
+================================================================================
+
+Tailwind v4 with custom theme tokens:
+- Fonts: Plus Jakarta Sans, Inter (sans-serif)
+- Custom colors: --color-medical-green (#059669), --color-medical-blue (#0284c7),
+  --color-medical-red (#e11d48)
+- Custom radii: 2xl (20px), 3xl (28px), 4xl (32px)
+- Custom shadows: glass, soft, float
+- Custom blur: xs (2px)
+
+Custom Tailwind utilities:
+- glass: Glassmorphism effect (backdrop-blur-xl, semi-transparent bg, border)
+- glass-card: Hover-interactive glass card with transform and shadow transitions
+- glass-header: Sticky glassmorphism header with backdrop-blur
+- card-gradient: Teal-to-emerald gradient
+- text-balance: text-wrap: balance
+- perspective-1000, preserve-3d, backface-hidden: 3D transform utilities
+
+Global styles:
+- Body: Subtle noise grain overlay (SVG fractalNoise filter at 3% opacity)
+- Custom scrollbar: 6px width, rounded thumb, slate colors
+- Headings: tracking-tight, font-bold
+- Focus visible: Teal ring-2 with offset
+- Dark mode: Full support via .dark class strategy
+
+
+17. DOCKER & DEPLOYMENT
+================================================================================
+
+--- Frontend Dockerfile ---
+Multi-stage build:
+  Stage 1 (builder): node:18-alpine, npm ci, npm run build
+  Stage 2 (serve): nginx:alpine, copies dist/ to nginx html root
+
+--- Backend Dockerfile ---
+Single stage: node:18-alpine
+Steps: npm ci -> prisma generate -> npm run build -> npm start
+Exposes port 3000
+
+--- docker-compose.yml ---
+Services:
+  frontend: Builds from root Dockerfile, maps port 80, depends on backend
+  backend: Builds from backend/Dockerfile, maps port 3000, mounts prisma volume
+
+--- nginx.conf ---
+Listens on port 80, serves from /usr/share/nginx/html
+SPA routing: try_files $uri $uri/ /index.html
+
+
+18. CI/CD (GitHub Actions)
+================================================================================
+
+File: .github/workflows/ci.yml
+Triggers: Push to main, Pull requests to main
+Runner: ubuntu-latest
+Node version: 18.x
+
+Steps:
+1. Checkout code
+2. Setup Node.js 18.x with npm cache
+3. Install frontend dependencies (npm ci)
+4. Build frontend (npm run build)
+5. Test frontend (npm run test)
+6. Install backend dependencies (npm ci in ./backend)
+7. Generate Prisma Client (npx prisma generate in ./backend)
+8. Build backend (npm run build in ./backend)
+9. Test backend (npm run test in ./backend)
+
+
+19. VITE BUILD CONFIGURATION
+================================================================================
+
+Plugins: @vitejs/plugin-react, @tailwindcss/vite
+Path alias: @ -> ./src
+Test config: happy-dom environment, vitest with jest-dom
+
+Manual chunk splitting for production:
+  vendor: react, react-dom, react-router-dom
+  ui: lucide-react, framer-motion, clsx, tailwind-merge
+  utils: zustand, html5-qrcode
+
+
+20. SEED DATA (backend/prisma/seed.ts)
+================================================================================
+
+The seed script creates test data:
+
+USERS:
+- Admin/Doctor: dr.sharma@pharmalync.in (role: ADMIN)
+- Nurse: nurse.priya@pharmalync.in (role: NURSE)
+- Pharmacist: pharmacy@pharmalync.in (role: PHARMACY)
+
+PATIENTS (encrypted PII):
+- Harish Kumar (Aadhaar: 123456789012, DOB: 1981-03-15, Phone: 9876543210, Address: 42 MG Road Bangalore)
+- Priya Singh (Aadhaar: 987654321098, DOB: 1998-07-22, Phone: 9876541122)
+
+MEDICINES (10 items):
+- Paracetamol 500mg (Cipla, stock: 120, Rs.2, Pain Relief)
+- Dolo 650 (Micro Labs, stock: 45, Rs.3, Fever)
+- Augmentin 625 (GSK, stock: 15, Rs.22, Antibiotic)
+- Cetirizine 10mg (Dr Reddy, stock: 200, Rs.5, Allergy)
+- Pantop 40 (Aristo, stock: 80, Rs.12, Gastritis)
+- Azithromycin 500 (Cipla, stock: 12, Rs.18, Antibiotic)
+- Cough Syrup 100ml (Dabur, stock: 5, Rs.95, Syrup)
+- Montelukast 10mg (Sun Pharma, stock: 60, Rs.8, Respiratory)
+- Amoxicillin 500mg (Cipla, stock: 90, Rs.7, Antibiotic)
+- Omeprazole 20mg (Dr Reddy, stock: 110, Rs.6, Gastritis)
+
+PRESCRIPTIONS:
+- 1 sample prescription for Harish Kumar by Dr. Sharma
+  Diagnosis: Upper Respiratory Tract Infection
+  Medicines: Augmentin 625 (10 qty, 1-0-1 After food), Dolo 650 (6 qty, 1-0-1 SOS)
+
+AUDIT LOGS:
+- 2 sample entries: CREATE_PATIENT and PRESCRIPTION_CREATE
+
+
+21. ENVIRONMENT VARIABLES (.env.example)
+================================================================================
+
+NODE_ENV=development
+PORT=3000
+
+DATABASE_URL="postgresql://user:password@localhost:5432/pharmalync?schema=public"
+
+ENCRYPTION_KEY="64-character-hex-string" (256-bit AES key)
+
+JWT_ACCESS_SECRET="min-32-char-string"
+JWT_REFRESH_SECRET="min-32-char-string"
+CONSENT_TOKEN_SECRET="min-32-char-string"
+
+JWT_ACCESS_EXPIRY="15m"
+JWT_REFRESH_EXPIRY="7d"
+CONSENT_TOKEN_EXPIRY="60m"
+
+BLOCKCHAIN_RPC_URL="https://sepolia.infura.io/v3/YOUR_KEY"
+BLOCKCHAIN_PRIVATE_KEY="wallet-private-key-without-0x"
+BLOCKCHAIN_NETWORK="sepolia"
+
+PHARMALYNC_CORE_ADDRESS="0x..."
+PHARMALYNC_AUDIT_ADDRESS="0x..."
+
+BCRYPT_ROUNDS=10
+PBKDF2_ITERATIONS=10000
+
+ALLOWED_ORIGINS="http://localhost:5173,http://localhost:3000"
+
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM="PharmaLync <noreply@pharmalync.com>"
+
+OTP_EXPIRY_MINUTES=5
+OTP_MAX_ATTEMPTS=5
+OTP_RESEND_COOLDOWN_SECONDS=30
+OTP_MAX_RESENDS=5
+
+
+22. COMPLIANCE
+================================================================================
+
+- UIDAI Compliance: Encrypted Aadhaar (3-layer), tokenized, consent-based access only
+- DPDP Act (India): Least privilege access, data minimization, encryption at rest
+- HIPAA-like: Encryption, RBAC, comprehensive audit trails, integrity verification
+
+
+23. CURRENT PROJECT STATUS
+================================================================================
+
+COMPLETED:
+- [x] Full frontend architecture with React, Vite, TailwindCSS
+- [x] 5 layout shells (Auth, Patient, Doctor, Pharmacist, Admin)
+- [x] 5 auth pages (Login, Signup, CreatePassword, ForgotPassword, ResetPassword)
+- [x] Patient dashboard with 7+ components (Dashboard, MedicineLog, Prescriptions, Profile, DigitalID, MedVerifier, MedicalRecords)
+- [x] Doctor dashboard with 7 pages (ScanQR, PatientDetails, Diagnosis, DraftPrescription, ActivityLog, Profile, Registration)
+- [x] Pharmacist dashboard with 5 pages (ScanQR, Dispense, Stock, History, Profile) + Zustand store
+- [x] Admin dashboard with 3 pages (Dashboard, UserManagement, AuditLog)
+- [x] 14 reusable UI components
+- [x] Full API client with JWT interceptor and auto-refresh
+- [x] Theme context (dark/light mode)
+- [x] Protected routes with role-based access
+- [x] Error boundary
+- [x] Backend Express API with 9 route modules
+- [x] 10 backend services (auth, OTP, email, aadhaar, encryption, KMS, consent, audit, blockchain, QR security)
+- [x] 4 middleware layers (security, auth, audit, consent)
+- [x] 12 Prisma database models with migration
+- [x] 3 Solidity smart contracts (PharmaLyncCore, PharmaLyncAudit, PharmaLyncToken)
+- [x] Database seed script with test data
+- [x] Docker setup (frontend + backend)
+- [x] GitHub Actions CI pipeline
+- [x] Winston logging (console + file)
+- [x] Deployment scripts for smart contracts
+
+IN PROGRESS / NEXT STEPS:
+- [ ] Deploy smart contracts to Sepolia testnet and update .env with addresses
+- [ ] Comprehensive E2E testing with Playwright
+- [ ] Switch from SQLite to PostgreSQL for production
+- [ ] Implement AWS KMS integration for key management
+- [ ] Token blacklisting for logout (currently stateless)
+- [ ] Notification system (backend model exists, frontend not yet built)
+- [ ] Medical history timeline UI completion
+- [ ] HTTPS / TLS configuration for production
+- [ ] Production monitoring and alerting setup
+
+================================================================================
+                          END OF DOCUMENTATION
+================================================================================

@@ -1,5 +1,8 @@
 FROM node:18-alpine
 
+# Install OpenSSL — required by Prisma engines
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 # Copy package files
@@ -21,5 +24,5 @@ RUN npm run build
 # Expose port
 EXPOSE 3000
 
-# Run migrations then start server
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+# Push schema to DB then start server
+CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
